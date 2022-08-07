@@ -15,6 +15,8 @@ import torch
 import torch.nn.functional as F
 # import torchmetrics
 from sklearn import metrics
+from opacus.utils.batch_memory_manager import BatchMemoryManager
+from tqdm import tqdm
 
 from config.serde import read_config, write_config
 
@@ -194,7 +196,7 @@ class Training:
             batch_loss = 0
             start_time = time.time()
 
-            for idx, (image, label) in enumerate(train_loader):
+            for idx, (image, label) in enumerate(tqdm(train_loader)):
                 self.model.train()
 
                 image = image.to(self.device)
@@ -211,6 +213,75 @@ class Training:
                     self.optimiser.step()
 
                     batch_loss += loss.item()
+
+            train_loss = batch_loss / len(train_loader)
+            self.writer.add_scalar('Train_loss_avg', train_loss, self.epoch)
+
+            # Validation iteration & calculate metrics
+            if (self.epoch) % (self.params['display_stats_freq']) == 0:
+
+                # saving the model, checkpoint, TensorBoard, etc.
+                if not valid_loader == None:
+                    valid_loss, valid_F1, valid_AUC, valid_accuracy, valid_specifity, valid_sensitivity, valid_precision = self.valid_epoch(valid_loader)
+                    end_time = time.time()
+                    total_time = end_time - total_start_time
+                    iteration_hours, iteration_mins, iteration_secs = self.time_duration(start_time, end_time)
+                    total_hours, total_mins, total_secs = self.time_duration(total_start_time, end_time)
+
+                    self.calculate_tb_stats(valid_loss=valid_loss, valid_F1=valid_F1, valid_AUC=valid_AUC, valid_accuracy=valid_accuracy, valid_specifity=valid_specifity,
+                                            valid_sensitivity=valid_sensitivity, valid_precision=valid_precision)
+                    self.savings_prints(iteration_hours, iteration_mins, iteration_secs, total_hours,
+                                        total_mins, total_secs, train_loss, total_time, valid_loss=valid_loss, valid_F1=valid_F1,
+                                        valid_AUC=valid_AUC, valid_accuracy=valid_accuracy, valid_specifity= valid_specifity,
+                                        valid_sensitivity=valid_sensitivity, valid_precision=valid_precision)
+                else:
+                    end_time = time.time()
+                    total_time = end_time - total_start_time
+                    iteration_hours, iteration_mins, iteration_secs = self.time_duration(start_time, end_time)
+                    total_hours, total_mins, total_secs = self.time_duration(total_start_time, end_time)
+                    self.savings_prints(iteration_hours, iteration_mins, iteration_secs, total_hours,
+                                        total_mins, total_secs, train_loss, total_time)
+
+
+    def train_epoch_DP(self, train_loader, privacy_engine, valid_loader=None):
+        """Training epoch
+        """
+        self.params = read_config(self.cfg_path)
+        total_start_time = time.time()
+
+        for epoch in range(self.num_epochs - self.epoch):
+            self.epoch += 1
+
+            # initializing the loss list
+            batch_loss = 0
+            start_time = time.time()
+
+            with BatchMemoryManager(data_loader=train_loader, max_physical_batch_size=self.params['Network']['batch_size'], optimizer=self.optimiser) as memory_safe_data_loader:
+
+                for idx, (image, label) in enumerate(tqdm(memory_safe_data_loader)):
+                    self.model.train()
+
+                    image = image.to(self.device)
+                    label = label.to(self.device)
+
+                    self.optimiser.zero_grad()
+
+                    with torch.set_grad_enabled(True):
+
+                        output = self.model(image)
+                        loss = self.loss_function(output, label.float()) # for multilabel
+
+                        loss.backward()
+                        self.optimiser.step()
+
+                        batch_loss += loss.item()
+
+                    if (idx + 1) % 200 == 0:
+                        epsilon = privacy_engine.get_epsilon(float(self.params['DP']['delta']))
+                        print(
+                            f"\tTrain Epoch: {epoch} \t | "
+                            f"Loss: {batch_loss/(idx + 1):.6f} | "
+                            f"(ε = {epsilon:.2f}, δ = {float(self.params['DP']['delta'])})")
 
             train_loss = batch_loss / len(train_loader)
             self.writer.add_scalar('Train_loss_avg', train_loss, self.epoch)

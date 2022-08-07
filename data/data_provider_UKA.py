@@ -49,7 +49,8 @@ class UKA_data_loader_2D(Dataset):
         self.augment = augment
         self.file_base_dir = self.params['file_path']
         self.file_base_dir = os.path.join(self.file_base_dir, 'UKA/chest_radiograph')
-        self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "original_UKA_master_list.csv"), sep=',')
+        # self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "original_UKA_master_list.csv"), sep=',')
+        self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "final_UKA_master_list.csv"), sep=',')
 
         if mode == 'train':
             self.subset_df = self.org_df[self.org_df['split'] == 'train']
@@ -59,7 +60,7 @@ class UKA_data_loader_2D(Dataset):
             self.subset_df = self.org_df[self.org_df['split'] == 'test']
 
         self.file_base_dir = os.path.join(self.file_base_dir, 'UKA_preprocessed')
-        self.file_path_list = list(self.subset_df['patient_id'])
+        self.file_path_list = list(self.subset_df['image_id'])
         # self.chosen_labels = ['disturbances_right', 'disturbances_left', 'cardiomegaly']
         self.chosen_labels = ['cardiomegaly', 'congestion', 'pleural_effusion_right', 'pleural_effusion_left', 'pneumonic_infiltrates_right',
                               'pneumonic_infiltrates_left', 'pneumothorax_right', 'pneumothorax_left']
@@ -84,7 +85,7 @@ class UKA_data_loader_2D(Dataset):
         img: torch tensor
         label: torch tensor
         """
-        subset = self.subset_df[self.subset_df['patient_id'] == self.file_path_list[idx]]['subset'].values[0]
+        subset = self.subset_df[self.subset_df['image_id'] == self.file_path_list[idx]]['subset'].values[0]
         img = cv2.imread(os.path.join(self.file_base_dir, subset, str(self.file_path_list[idx]) + '.jpg')) # (h, w, d)
 
         if self.augment:
@@ -94,7 +95,7 @@ class UKA_data_loader_2D(Dataset):
             trans = transforms.Compose([transforms.ToPILImage(), transforms.ToTensor()])
         img = trans(img)
 
-        label_df = self.subset_df[self.subset_df['patient_id'] == self.file_path_list[idx]]
+        label_df = self.subset_df[self.subset_df['image_id'] == self.file_path_list[idx]]
 
         label = torch.zeros((len(self.chosen_labels)))  # (h,)
 

@@ -1,1 +1,4 @@
 /.idea/
+/__pycache__/
+/data/__pycache__/
+/config/__pycache__/

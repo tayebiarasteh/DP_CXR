@@ -1,5 +1,6 @@
 Network:
   batch_size: 5
+#  batch_size: 16
   lr: 5e-5
   weight_decay: 0
   amsgrad: False
@@ -13,6 +14,13 @@ trained_model_name: trained_model.pth
 # changeable items:
 file_path: /home/soroosh/Documents/datasets/XRay/
 target_dir: /home/soroosh/Documents/Repositories_target_files/DP_CXR/
-network_save_freq: 25 # number of epochs to save
-display_stats_freq: 5 # valid freq is equal to this
+network_save_freq: 2 # number of epochs to save
+display_stats_freq: 1 # valid freq is equal to this
 num_epochs: 1000
+
+DP:
+  epsilon: 10
+  delta: 5e-6  # at least inverse of the training dataset length, or lower
+  max_grad_norm: 1.2
+  logical_batch_size: 15
+#  logical_batch_size: 64
