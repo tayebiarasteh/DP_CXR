@@ -104,7 +104,7 @@ class Training:
         return elapsed_hours, elapsed_mins, elapsed_secs
 
 
-    def setup_model(self, model, optimiser, loss_function, weight=None):
+    def setup_model(self, model, optimiser, loss_function, weight=None, privacy_engine=None):
         """Setting up all the models, optimizers, and loss functions.
 
         Parameters
@@ -144,6 +144,9 @@ class Training:
         self.params['Network'] = self.model_info
         write_config(self.params, self.cfg_path, sort_keys=True)
 
+        if privacy_engine is not None:
+            self.privacy_engine = privacy_engine
+
 
     def load_checkpoint(self, model, optimiser, loss_function, weight, label_names):
         """In case of resuming training from a checkpoint,
@@ -181,6 +184,43 @@ class Training:
         self.writer = SummaryWriter(log_dir=os.path.join(os.path.join(
             self.params['target_dir'], self.params['tb_logs_path'])), purge_step=self.epoch + 1)
 
+
+    def load_checkpoint_DP(self, model, optimiser, loss_function, weight, label_names, privacy_engine):
+        """In case of resuming training from a checkpoint,
+        loads the weights for all the models, optimizers, and
+        loss functions, and device, tensorboard events, number
+        of iterations (epochs), and every info from checkpoint.
+
+        Parameters
+        ----------
+        model: model file
+            The network
+
+        optimiser: optimizer file
+            The optimizer
+
+        loss_function: loss file
+            The loss function
+        """
+        checkpoint = torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path'],
+                                self.params['checkpoint_name']))
+        self.device = None
+        self.model_info = checkpoint['model_info']
+        self.setup_cuda()
+        self.model = model.to(self.device)
+        self.loss_weight = weight
+        self.loss_weight = self.loss_weight.to(self.device)
+        self.loss_function = loss_function(weight=self.loss_weight)
+        self.optimiser = optimiser
+        self.label_names = label_names
+
+        self.privacy_engine = privacy_engine
+        checkpoint_DP = self.privacy_engine.load_checkpoint(module=self.model, optimizer=self.optimiser,
+                                                            path=os.path.join(self.params['target_dir'], self.params['network_output_path'], self.params['DP_checkpoint_name']))
+        self.epoch = checkpoint['epoch']
+        self.best_loss = checkpoint['best_loss']
+        self.writer = SummaryWriter(log_dir=os.path.join(os.path.join(
+            self.params['target_dir'], self.params['tb_logs_path'])), purge_step=self.epoch + 1)
 
 
     def train_epoch(self, train_loader, valid_loader=None):
@@ -243,7 +283,7 @@ class Training:
                                         total_mins, total_secs, train_loss, total_time)
 
 
-    def train_epoch_DP(self, train_loader, privacy_engine, valid_loader=None):
+    def train_epoch_DP(self, train_loader, valid_loader=None):
         """Training epoch
         """
         self.params = read_config(self.cfg_path)
@@ -256,9 +296,9 @@ class Training:
             batch_loss = 0
             start_time = time.time()
 
-            with BatchMemoryManager(data_loader=train_loader, max_physical_batch_size=self.params['Network']['batch_size'], optimizer=self.optimiser) as memory_safe_data_loader:
+            with BatchMemoryManager(data_loader=train_loader, max_physical_batch_size=self.params['Network']['physical_batch_size'], optimizer=self.optimiser) as memory_safe_data_loader:
 
-                for idx, (image, label) in enumerate(tqdm(memory_safe_data_loader)):
+                for idx, (image, label) in enumerate(memory_safe_data_loader):
                     self.model.train()
 
                     image = image.to(self.device)
@@ -277,7 +317,7 @@ class Training:
                         batch_loss += loss.item()
 
                     if (idx + 1) % 200 == 0:
-                        epsilon = privacy_engine.get_epsilon(float(self.params['DP']['delta']))
+                        epsilon = self.privacy_engine.get_epsilon(float(self.params['DP']['delta']))
                         print(
                             f"\tTrain Epoch: {epoch} \t | "
                             f"Loss: {batch_loss/(idx + 1):.6f} | "
@@ -472,12 +512,20 @@ class Training:
                        'epoch{}_'.format(self.epoch) + self.params['trained_model_name']))
 
         # Save a checkpoint every epoch
-        torch.save({'epoch': self.epoch,
-                    'model_state_dict': self.model.state_dict(),
-                    'optimizer_state_dict': self.optimiser.state_dict(),
-                    'loss_state_dict': self.loss_function.state_dict(), 'num_epochs': self.num_epochs,
-                    'model_info': self.model_info, 'best_loss': self.best_loss},
-                   os.path.join(self.params['target_dir'], self.params['network_output_path'], self.params['checkpoint_name']))
+        if self.privacy_engine is not None:
+            self.privacy_engine.save_checkpoint(path=os.path.join(self.params['target_dir'], self.params['network_output_path'], self.params['DP_checkpoint_name']),
+                                           module=self.model, optimizer=self.optimiser)
+            torch.save({'epoch': self.epoch, 'loss_state_dict': self.loss_function.state_dict(), 'num_epochs': self.num_epochs,
+                        'model_info': self.model_info, 'best_loss': self.best_loss},
+                       os.path.join(self.params['target_dir'], self.params['network_output_path'],
+                                    self.params['checkpoint_name']))
+        else:
+            torch.save({'epoch': self.epoch,
+                        'model_state_dict': self.model.state_dict(),
+                        'optimizer_state_dict': self.optimiser.state_dict(),
+                        'loss_state_dict': self.loss_function.state_dict(), 'num_epochs': self.num_epochs,
+                        'model_info': self.model_info, 'best_loss': self.best_loss},
+                       os.path.join(self.params['target_dir'], self.params['network_output_path'], self.params['checkpoint_name']))
 
         print('------------------------------------------------------'
               '----------------------------------')

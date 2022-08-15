@@ -16,7 +16,6 @@ import numpy as np
 from torch.utils.data import Dataset
 from torchvision import transforms
 import cv2
-from skimage.util import img_as_ubyte
 
 from config.serde import read_config
 
@@ -50,7 +49,8 @@ class UKA_data_loader_2D(Dataset):
         self.file_base_dir = self.params['file_path']
         self.file_base_dir = os.path.join(self.file_base_dir, 'UKA/chest_radiograph')
         # self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "original_UKA_master_list.csv"), sep=',')
-        self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "final_UKA_master_list.csv"), sep=',')
+        # self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "final_UKA_master_list.csv"), sep=',')
+        self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "5000_final_UKA_master_list.csv"), sep=',')
 
         if mode == 'train':
             self.subset_df = self.org_df[self.org_df['split'] == 'train']
@@ -61,11 +61,10 @@ class UKA_data_loader_2D(Dataset):
 
         self.file_base_dir = os.path.join(self.file_base_dir, 'UKA_preprocessed')
         self.file_path_list = list(self.subset_df['image_id'])
-        # self.chosen_labels = ['disturbances_right', 'disturbances_left', 'cardiomegaly']
         self.chosen_labels = ['cardiomegaly', 'congestion', 'pleural_effusion_right', 'pleural_effusion_left', 'pneumonic_infiltrates_right',
-                              'pneumonic_infiltrates_left', 'pneumothorax_right', 'pneumothorax_left']
-        # self.chosen_labels = ['pleural_effusion_left', 'pleural_effusion_right', 'congestion', 'cardiomegaly', 'pneumonic_infiltrates_left', 'pneumonic_infiltrates_right']
-        # self.chosen_labels = ['pleural_effusion_right', 'pneumonic_infiltrates_left']
+                              'pneumonic_infiltrates_left', 'disturbances_right', 'disturbances_left'] # 8 labels
+        # self.chosen_labels = ['pleural_effusion_left', 'pleural_effusion_right', 'congestion', 'cardiomegaly', 'pneumonic_infiltrates_left', 'pneumonic_infiltrates_right'] # 5 labels
+        # self.chosen_labels = ['pleural_effusion_right', 'pneumonic_infiltrates_left'] # 2 labels
 
 
 
