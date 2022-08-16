@@ -325,6 +325,7 @@ class Training:
 
             train_loss = batch_loss / len(train_loader)
             self.writer.add_scalar('Train_loss_avg', train_loss, self.epoch)
+            self.writer.add_scalar('Epsilon', self.privacy_engine.get_epsilon(float(self.params['DP']['delta'])), self.epoch)
 
             # Validation iteration & calculate metrics
             if (self.epoch) % (self.params['display_stats_freq']) == 0:
@@ -527,12 +528,18 @@ class Training:
                         'model_info': self.model_info, 'best_loss': self.best_loss},
                        os.path.join(self.params['target_dir'], self.params['network_output_path'], self.params['checkpoint_name']))
 
+        if self.privacy_engine is not None:
+            epsilon = self.privacy_engine.get_epsilon(float(self.params['DP']['delta']))
+            delta = float(self.params['DP']['delta'])
+        else:
+            epsilon = 'inf'
+            delta = 'inf'
         print('------------------------------------------------------'
               '----------------------------------')
         print(f'epoch: {self.epoch} | '
               f'epoch time: {iteration_hours}h {iteration_mins}m {iteration_secs:.2f}s | '
               f'total time: {total_hours}h {total_mins}m {total_secs:.2f}s')
-        print(f'\n\tTrain loss: {train_loss:.4f}')
+        print(f'\n\tTrain loss: {train_loss:.4f}, ε = {epsilon:.2f} | δ = {delta}')
 
         if valid_loss:
             print(f'\t Val. loss: {valid_loss:.4f} | Average F1: {valid_F1.mean() * 100:.2f}% | Average AUROC: {valid_AUC.mean() * 100:.2f}% | Average accuracy: {valid_accuracy.mean() * 100:.2f}%'
@@ -555,14 +562,14 @@ class Training:
             msg = f'\n\n----------------------------------------------------------------------------------------\n' \
                    f'epoch: {self.epoch} | epoch Time: {iteration_hours}h {iteration_mins}m {iteration_secs:.2f}s' \
                    f' | total time: {total_hours}h {total_mins}m {total_secs:.2f}s | ' \
-                  f'\n\n\tTrain loss: {train_loss:.4f} | ' \
+                  f'\n\n\tTrain loss: {train_loss:.4f}, ε = {epsilon:.2f} | δ = {delta} | ' \
                    f'Val. loss: {valid_loss:.4f} | Average F1: {valid_F1.mean() * 100:.2f}% | Average AUROC: {valid_AUC.mean() * 100:.2f}% | Average accuracy: {valid_accuracy.mean() * 100:.2f}% ' \
                    f' | Average specifity: {valid_specifity.mean() * 100:.2f}%' \
                    f' | Average recall (sensitivity): {valid_sensitivity.mean() * 100:.2f}% | Average precision: {valid_precision.mean() * 100:.2f}%\n\n'
         else:
             msg = f'----------------------------------------------------------------------------------------\n' \
                    f'epoch: {self.epoch} | epoch time: {iteration_hours}h {iteration_mins}m {iteration_secs:.2f}s' \
-                   f' | total time: {total_hours}h {total_mins}m {total_secs:.2f}s\n\n\ttrain loss: {train_loss:.4f}\n\n'
+                   f' | total time: {total_hours}h {total_mins}m {total_secs:.2f}s\n\n\ttrain loss: {train_loss:.4f}, ε = {epsilon:.2f} | δ = {delta}\n\n'
         with open(os.path.join(self.params['target_dir'], self.params['stat_log_path']) + '/Stats', 'a') as f:
             f.write(msg)
 

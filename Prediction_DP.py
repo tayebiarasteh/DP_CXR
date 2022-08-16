@@ -54,7 +54,7 @@ class Prediction:
             model_file_name = self.params['trained_model_name']
         self.model = model.to(self.device)
 
-        self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path'], model_file_name)))
+        # self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path'], model_file_name)))
         self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path']) + "epoch775_" + model_file_name))
 
 
