@@ -16,9 +16,9 @@ trained_model_name: trained_model.pth
 file_path: /home/soroosh/Documents/datasets/XRay/
 target_dir: /home/soroosh/Documents/Repositories_target_files/DP_CXR/
 network_save_freq: 2 # number of epochs to save
-#network_save_freq: 25 # number of epochs to save
+#network_save_freq: 30 # number of epochs to save
 display_stats_freq: 1 # valid freq is equal to this
-#display_stats_freq: 5 # valid freq is equal to this
+#display_stats_freq: 15 # valid freq is equal to this
 num_epochs: 1000
 
 DP:

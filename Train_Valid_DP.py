@@ -136,8 +136,6 @@ class Training:
         self.optimiser = optimiser
 
         # Saves the model, optimiser,loss function name for writing to config file
-        # self.model_info['model'] = model.__name__
-        # self.model_info['optimiser'] = optimiser.__name__
         self.model_info['total_param_num'] = total_param_num
         self.model_info['loss_function'] = loss_function.__name__
         self.model_info['num_epochs'] = self.num_epochs
@@ -343,7 +341,7 @@ class Training:
                     self.savings_prints(iteration_hours, iteration_mins, iteration_secs, total_hours,
                                         total_mins, total_secs, train_loss, total_time, valid_loss=valid_loss, valid_F1=valid_F1,
                                         valid_AUC=valid_AUC, valid_accuracy=valid_accuracy, valid_specifity= valid_specifity,
-                                        valid_sensitivity=valid_sensitivity, valid_precision=valid_precision)
+                                        valid_sensitivity=valid_sensitivity, valid_precision=valid_precision, privacy_engine=True)
                 else:
                     end_time = time.time()
                     total_time = end_time - total_start_time
@@ -451,7 +449,7 @@ class Training:
 
     def savings_prints(self, iteration_hours, iteration_mins, iteration_secs, total_hours,
                        total_mins, total_secs, train_loss, total_time, valid_loss=None, valid_F1=None, valid_AUC=None, valid_accuracy=None,
-                       valid_specifity=None, valid_sensitivity=None, valid_precision=None):
+                       valid_specifity=None, valid_sensitivity=None, valid_precision=None, privacy_engine=False):
         """Saving the model weights, checkpoint, information,
         and training and validation loss and evaluation statistics.
 
@@ -513,7 +511,7 @@ class Training:
                        'epoch{}_'.format(self.epoch) + self.params['trained_model_name']))
 
         # Save a checkpoint every epoch
-        if self.privacy_engine is not None:
+        if privacy_engine:
             self.privacy_engine.save_checkpoint(path=os.path.join(self.params['target_dir'], self.params['network_output_path'], self.params['DP_checkpoint_name']),
                                            module=self.model, optimizer=self.optimiser)
             torch.save({'epoch': self.epoch, 'loss_state_dict': self.loss_function.state_dict(), 'num_epochs': self.num_epochs,
