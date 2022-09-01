@@ -312,9 +312,9 @@ def load_pretrained_swin_transformer(num_classes=2, mode='b', pretrained=False):
 
 
 if __name__ == '__main__':
-    delete_experiment(experiment_name='temp', global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml")
+    # delete_experiment(experiment_name='temp', global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml")
     main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-                  valid=True, resume=False, augment=True, experiment_name='temp', pretrained=False, resnetnum=18)
+                  valid=False, resume=True, augment=True, experiment_name='temp', pretrained=False, resnetnum=18)
     # main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
     #               valid=True, resume=True, experiment_name='temp', pretrained=False, resnetnum=18)
     # main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='temp')

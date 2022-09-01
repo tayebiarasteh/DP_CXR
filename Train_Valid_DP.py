@@ -268,8 +268,8 @@ class Training:
 
                     self.calculate_tb_stats(valid_loss=valid_loss, valid_F1=valid_F1, valid_AUC=valid_AUC, valid_accuracy=valid_accuracy, valid_specifity=valid_specifity,
                                             valid_sensitivity=valid_sensitivity, valid_precision=valid_precision)
-                    self.savings_prints(iteration_hours, iteration_mins, iteration_secs, total_hours,
-                                        total_mins, total_secs, train_loss, total_time, valid_loss=valid_loss, valid_F1=valid_F1,
+                    self.savings_prints(iteration_hours=iteration_hours, iteration_mins=iteration_mins, iteration_secs=iteration_secs, total_hours=total_hours,
+                                        total_mins=total_mins, total_secs=total_secs, train_loss=train_loss, total_time=total_time, valid_loss=valid_loss, valid_F1=valid_F1,
                                         valid_AUC=valid_AUC, valid_accuracy=valid_accuracy, valid_specifity= valid_specifity,
                                         valid_sensitivity=valid_sensitivity, valid_precision=valid_precision)
                 else:
@@ -277,8 +277,8 @@ class Training:
                     total_time = end_time - total_start_time
                     iteration_hours, iteration_mins, iteration_secs = self.time_duration(start_time, end_time)
                     total_hours, total_mins, total_secs = self.time_duration(total_start_time, end_time)
-                    self.savings_prints(iteration_hours, iteration_mins, iteration_secs, total_hours,
-                                        total_mins, total_secs, train_loss, total_time)
+                    self.savings_prints(iteration_hours=iteration_hours, iteration_mins=iteration_mins, iteration_secs=iteration_secs, total_hours=total_hours,
+                                        total_mins=total_mins, total_secs=total_secs, train_loss=train_loss, total_time=total_time)
 
 
     def train_epoch_DP(self, train_loader, valid_loader=None):
@@ -338,8 +338,8 @@ class Training:
 
                     self.calculate_tb_stats(valid_loss=valid_loss, valid_F1=valid_F1, valid_AUC=valid_AUC, valid_accuracy=valid_accuracy, valid_specifity=valid_specifity,
                                             valid_sensitivity=valid_sensitivity, valid_precision=valid_precision)
-                    self.savings_prints(iteration_hours, iteration_mins, iteration_secs, total_hours,
-                                        total_mins, total_secs, train_loss, total_time, valid_loss=valid_loss, valid_F1=valid_F1,
+                    self.savings_prints(iteration_hours=iteration_hours, iteration_mins=iteration_mins, iteration_secs=iteration_secs, total_hours=total_hours,
+                                        total_mins=total_mins, total_secs=total_secs, train_loss=train_loss, total_time=total_time, valid_loss=valid_loss, valid_F1=valid_F1,
                                         valid_AUC=valid_AUC, valid_accuracy=valid_accuracy, valid_specifity= valid_specifity,
                                         valid_sensitivity=valid_sensitivity, valid_precision=valid_precision, privacy_engine=True)
                 else:
@@ -347,8 +347,8 @@ class Training:
                     total_time = end_time - total_start_time
                     iteration_hours, iteration_mins, iteration_secs = self.time_duration(start_time, end_time)
                     total_hours, total_mins, total_secs = self.time_duration(total_start_time, end_time)
-                    self.savings_prints(iteration_hours, iteration_mins, iteration_secs, total_hours,
-                                        total_mins, total_secs, train_loss, total_time)
+                    self.savings_prints(iteration_hours=iteration_hours, iteration_mins=iteration_mins, iteration_secs=iteration_secs, total_hours=total_hours,
+                                        total_mins=total_mins, total_secs=total_secs, train_loss=train_loss, total_time=total_time, privacy_engine=True)
 
 
 
@@ -372,8 +372,6 @@ class Training:
         logits_no_sigmoid_cache = torch.Tensor([]).to(self.device)
         labels_cache = torch.Tensor([]).to(self.device)
 
-
-
         for idx, (image, label) in enumerate(valid_loader):
 
             image = image.to(self.device)
@@ -382,7 +380,6 @@ class Training:
 
             with torch.no_grad():
                 output = self.model(image)
-                # loss = self.loss_function(output, label.float())  # for multilabel
 
                 output_sigmoided = F.sigmoid(output)
                 output_sigmoided = (output_sigmoided > 0.5).float()
@@ -391,8 +388,6 @@ class Training:
                 logits_with_sigmoid_cache = torch.cat((logits_with_sigmoid_cache, output_sigmoided))
                 logits_no_sigmoid_cache = torch.cat((logits_no_sigmoid_cache, output))
                 labels_cache = torch.cat((labels_cache, label))
-
-            # total_loss += loss.item()
 
         ############ Evaluation metric calculation ########
 
@@ -526,18 +521,18 @@ class Training:
                         'model_info': self.model_info, 'best_loss': self.best_loss},
                        os.path.join(self.params['target_dir'], self.params['network_output_path'], self.params['checkpoint_name']))
 
-        if self.privacy_engine is not None:
+        if privacy_engine:
             epsilon = self.privacy_engine.get_epsilon(float(self.params['DP']['delta']))
             delta = float(self.params['DP']['delta'])
         else:
-            epsilon = 'inf'
-            delta = 'inf'
+            epsilon = float('inf')
+            delta = float('inf')
         print('------------------------------------------------------'
               '----------------------------------')
         print(f'epoch: {self.epoch} | '
               f'epoch time: {iteration_hours}h {iteration_mins}m {iteration_secs:.2f}s | '
               f'total time: {total_hours}h {total_mins}m {total_secs:.2f}s')
-        print(f'\n\tTrain loss: {train_loss:.4f}, ε = {epsilon:.2f} | δ = {delta}')
+        print(f'\n\tTrain loss: {train_loss:.4f}, ε = {epsilon:.2f} | δ = {delta}\n')
 
         if valid_loss:
             print(f'\t Val. loss: {valid_loss:.4f} | Average F1: {valid_F1.mean() * 100:.2f}% | Average AUROC: {valid_AUC.mean() * 100:.2f}% | Average accuracy: {valid_accuracy.mean() * 100:.2f}%'
