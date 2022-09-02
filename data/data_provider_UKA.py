@@ -48,9 +48,9 @@ class UKA_data_loader_2D(Dataset):
         self.augment = augment
         self.file_base_dir = self.params['file_path']
         self.file_base_dir = os.path.join(self.file_base_dir, 'UKA/chest_radiograph')
-        # self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "original_novalid_UKA_master_list.csv"), sep=',')
-        # self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "final_UKA_master_list.csv"), sep=',')
-        self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "5000_DP_final_UKA_master_list.csv"), sep=',')
+        # self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "DP_project_also_original/original_novalid_UKA_master_list.csv"), sep=',') # 150,188 train / 39,021 test images
+        # self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "DP_project_also_original/original_UKA_master_list.csv"), sep=',') # 119,782 train / 39,021 test images
+        self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "DP_project_also_original/5000_DP_final_UKA_master_list.csv"), sep=',') # 4,881 train / 39,021 test images
 
         if mode == 'train':
             self.subset_df = self.org_df[self.org_df['split'] == 'train']
@@ -61,10 +61,9 @@ class UKA_data_loader_2D(Dataset):
 
         self.file_base_dir = os.path.join(self.file_base_dir, 'UKA_preprocessed')
         self.file_path_list = list(self.subset_df['image_id'])
-        self.chosen_labels = ['cardiomegaly', 'congestion', 'pleural_effusion_right', 'pleural_effusion_left', 'pneumonic_infiltrates_right',
-                              'pneumonic_infiltrates_left', 'disturbances_right', 'disturbances_left'] # 8 labels
-        # self.chosen_labels = ['pleural_effusion_left', 'pleural_effusion_right', 'congestion', 'cardiomegaly', 'pneumonic_infiltrates_left', 'pneumonic_infiltrates_right'] # 5 labels
-        # self.chosen_labels = ['pleural_effusion_right', 'pneumonic_infiltrates_left'] # 2 labels
+        # self.chosen_labels = ['cardiomegaly', 'congestion', 'pleural_effusion_right', 'pleural_effusion_left', 'pneumonic_infiltrates_right',
+        #                       'pneumonic_infiltrates_left', 'atelectasis_right', 'atelectasis_left'] # 8 labels
+        self.chosen_labels = ['cardiomegaly', 'pneumonic_infiltrates_right', 'pneumonic_infiltrates_right'] # 3 labels
 
 
 
@@ -99,10 +98,22 @@ class UKA_data_loader_2D(Dataset):
         label = torch.zeros((len(self.chosen_labels)))  # (h,)
 
         for idx in range(len(self.chosen_labels)):
-            if int(label_df[self.chosen_labels[idx]].values[0]) < 3:
-                label[idx] = 0
+            if self.chosen_labels[idx] == 'cardiomegaly':
+                if int(label_df[self.chosen_labels[idx]].values[0]) == 3:
+                    label[idx] = 1
+                elif int(label_df[self.chosen_labels[idx]].values[0]) == 4:
+                    label[idx] = 1
+                elif int(label_df[self.chosen_labels[idx]].values[0]) == 1:
+                    label[idx] = 0
+                elif int(label_df[self.chosen_labels[idx]].values[0]) == 2:
+                    label[idx] = 0
             else:
-                label[idx] = 1
+                if int(label_df[self.chosen_labels[idx]].values[0]) == 3:
+                    label[idx] = 1
+                elif int(label_df[self.chosen_labels[idx]].values[0]) == 4:
+                    label[idx] = 1
+                else:
+                    label[idx] = 0
 
         label = label.float()
 
