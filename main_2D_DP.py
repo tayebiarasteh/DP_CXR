@@ -109,7 +109,7 @@ def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP
     cfg_path = params["cfg_path"]
 
     train_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='train', augment=False)
-    valid_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='valid', augment=False)
+    valid_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='test', augment=False)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['DP']['logical_batch_size'],
                                             drop_last=True, shuffle=True, num_workers=10)
@@ -134,21 +134,21 @@ def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP
     assert len(errors) == 0
     privacy_engine = PrivacyEngine()
 
-    # model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
-    #     module=model,
-    #     optimizer=optimizer,
-    #     data_loader=train_loader,
-    #     epochs=params['num_epochs'],
-    #     target_epsilon=params['DP']['epsilon'],
-    #     target_delta=float(params['DP']['delta']),
-    #     max_grad_norm=params['DP']['max_grad_norm'])
-
-    model, optimizer, train_loader = privacy_engine.make_private(
+    model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
         module=model,
         optimizer=optimizer,
         data_loader=train_loader,
-        noise_multiplier=params['DP']['noise_multiplier'],
+        epochs=params['num_epochs'],
+        target_epsilon=params['DP']['epsilon'],
+        target_delta=float(params['DP']['delta']),
         max_grad_norm=params['DP']['max_grad_norm'])
+
+    # model, optimizer, train_loader = privacy_engine.make_private(
+    #     module=model,
+    #     optimizer=optimizer,
+    #     data_loader=train_loader,
+    #     noise_multiplier=params['DP']['noise_multiplier'],
+    #     max_grad_norm=params['DP']['max_grad_norm'])
 
     trainer = Training(cfg_path, num_epochs=params['num_epochs'], resume=resume, label_names=label_names)
     if resume == True:
@@ -313,8 +313,8 @@ def load_pretrained_swin_transformer(num_classes=2, mode='b', pretrained=False):
 
 if __name__ == '__main__':
     # delete_experiment(experiment_name='temp', global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml")
-    main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-                  valid=False, resume=True, augment=True, experiment_name='temp', pretrained=False, resnetnum=18)
-    # main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-    #               valid=True, resume=True, experiment_name='temp', pretrained=False, resnetnum=18)
+    # main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+    #               valid=False, resume=False, augment=True, experiment_name='temp', pretrained=False, resnetnum=18)
+    main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+                  valid=True, resume=True, experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64', pretrained=False, resnetnum=50)
     # main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='temp')

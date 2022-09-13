@@ -61,9 +61,9 @@ class UKA_data_loader_2D(Dataset):
 
         self.file_base_dir = os.path.join(self.file_base_dir, 'UKA_preprocessed')
         self.file_path_list = list(self.subset_df['image_id'])
-        # self.chosen_labels = ['cardiomegaly', 'congestion', 'pleural_effusion_right', 'pleural_effusion_left', 'pneumonic_infiltrates_right',
-        #                       'pneumonic_infiltrates_left', 'atelectasis_right', 'atelectasis_left'] # 8 labels
-        self.chosen_labels = ['cardiomegaly', 'pneumonic_infiltrates_right', 'pneumonic_infiltrates_right'] # 3 labels
+        self.chosen_labels = ['cardiomegaly', 'congestion', 'pleural_effusion_right', 'pleural_effusion_left', 'pneumonic_infiltrates_right',
+                              'pneumonic_infiltrates_left', 'atelectasis_right', 'atelectasis_left'] # 8 labels
+        # self.chosen_labels = ['cardiomegaly', 'pneumonic_infiltrates_right', 'pneumonic_infiltrates_right'] # 3 labels
 
 
 
