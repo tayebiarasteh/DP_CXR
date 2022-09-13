@@ -159,9 +159,8 @@ def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP
 
 
 
-
-def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_exp_for_test'):
-    """Main function for multi label prediction
+def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_exp_for_test', resnetnum=50):
+    """Main function for multi label prediction without DP
 
     Parameters
     ----------
@@ -176,31 +175,40 @@ def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositorie
     label_names = test_dataset.chosen_labels
 
     # Changeable network parameters
-    model = load_pretrained_model(num_classes=len(weight), resnet_num=50)
+    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum)
+    model = ModuleValidator.fix(model)
 
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=params['Network']['batch_size'],
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=params['Network']['physical_batch_size'],
                                                pin_memory=True, drop_last=False, shuffle=False, num_workers=16)
 
     # Initialize prediction
     predictor = Prediction(cfg_path, label_names)
     predictor.setup_model(model=model)
-    average_f1_score, average_AUROC, average_accuracy, average_specifity, average_sensitivity, average_precision = predictor.evaluate_2D(test_loader)
+    average_f1_score, average_AUROC, average_accuracy, average_specificity, average_sensitivity, average_precision = predictor.evaluate_2D(test_loader)
 
     print('------------------------------------------------------'
           '----------------------------------')
     print(f'\t experiment: {experiment_name}\n')
 
-    print(f'\t Average F1: {average_f1_score.mean() * 100:.2f}% | Average AUROC: {average_AUROC.mean() * 100:.2f}% | Average accuracy: {average_accuracy.mean() * 100:.2f}%'
-    f' | Average specifity: {average_specifity.mean() * 100:.2f}%'
-    f' | Average recall (sensitivity): {average_sensitivity.mean() * 100:.2f}% | Average precision: {average_precision.mean() * 100:.2f}%\n')
+    print(f'\t avg AUROC: {average_AUROC.mean() * 100:.2f}% | avg accuracy: {average_accuracy.mean() * 100:.2f}%'
+    f' | avg specificity: {average_specificity.mean() * 100:.2f}%'
+    f' | avg recall (sensitivity): {average_sensitivity.mean() * 100:.2f}% | avg precision: {average_precision.mean() * 100:.2f}% | avg F1: {average_f1_score.mean() * 100:.2f}%\n')
 
-    print('Individual F1 scores:')
-    for idx, pathology in enumerate(predictor.label_names):
-        print(f'\t{pathology}: {average_f1_score[idx] * 100:.2f}%')
-
-    print('\nIndividual AUROC:')
+    print('Individual AUROC:')
     for idx, pathology in enumerate(predictor.label_names):
         print(f'\t{pathology}: {average_AUROC[idx] * 100:.2f}%')
+
+    print('\nIndividual accuracy:')
+    for idx, pathology in enumerate(predictor.label_names):
+        print(f'\t{pathology}: {average_accuracy[idx] * 100:.2f}%')
+
+    print('\nIndividual specificity scores:')
+    for idx, pathology in enumerate(predictor.label_names):
+        print(f'\t{pathology}: {average_specificity[idx] * 100:.2f}%')
+
+    print('\nIndividual sensitivity scores:')
+    for idx, pathology in enumerate(predictor.label_names):
+        print(f'\t{pathology}: {average_sensitivity[idx] * 100:.2f}%')
 
     print('------------------------------------------------------'
           '----------------------------------')
@@ -208,21 +216,14 @@ def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositorie
     # saving the stats
     msg = f'----------------------------------------------------------------------------------------\n' \
           f'\t experiment: {experiment_name}\n\n' \
-          f'Average F1: {average_f1_score.mean() * 100:.2f}% | Average AUROC: {average_AUROC.mean() * 100:.2f}% | Average accuracy: {average_accuracy.mean() * 100:.2f}% ' \
-          f' | Average specifity: {average_specifity.mean() * 100:.2f}%' \
-          f' | Average recall (sensitivity): {average_sensitivity.mean() * 100:.2f}% | Average precision: {average_precision.mean() * 100:.2f}%\n\n'
+          f'avg AUROC: {average_AUROC.mean() * 100:.2f}% | avg accuracy: {average_accuracy.mean() * 100:.2f}% ' \
+          f' | avg specificity: {average_specificity.mean() * 100:.2f}%' \
+          f' | avg recall (sensitivity): {average_sensitivity.mean() * 100:.2f}% | avg precision: {average_precision.mean() * 100:.2f}% | avg F1: {average_f1_score.mean() * 100:.2f}%\n\n'
 
     with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
         f.write(msg)
 
-    msg = f'Individual F1 scores:\n'
-    with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
-        f.write(msg)
-    for idx, pathology in enumerate(label_names):
-        msg = f'{pathology}: {average_f1_score[idx] * 100:.2f}% | '
-        with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
-            f.write(msg)
-    msg = f'\n\nIndividual AUROC:\n'
+    msg = f'Individual AUROC:\n'
     with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
         f.write(msg)
     for idx, pathology in enumerate(label_names):
@@ -230,6 +231,144 @@ def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositorie
         with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
             f.write(msg)
 
+    msg = f'\n\nIndividual accuracy:\n'
+    with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+        f.write(msg)
+    for idx, pathology in enumerate(label_names):
+        msg = f'{pathology}: {average_accuracy[idx] * 100:.2f}% | '
+        with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+            f.write(msg)
+
+    msg = f'\n\nIndividual specificity scores:\n'
+    with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+        f.write(msg)
+    for idx, pathology in enumerate(label_names):
+        msg = f'{pathology}: {average_specificity[idx] * 100:.2f}% | '
+        with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+            f.write(msg)
+
+    msg = f'\n\nIndividual sensitivity scores:\n'
+    with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+        f.write(msg)
+    for idx, pathology in enumerate(label_names):
+        msg = f'{pathology}: {average_sensitivity[idx] * 100:.2f}% | '
+        with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+            f.write(msg)
+
+
+
+
+def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_exp_for_test', resnetnum=50):
+    """Main function for multi label prediction with differential privacy
+
+    Parameters
+    ----------
+    experiment_name: str
+        name of the experiment to be loaded.
+    """
+    params = open_experiment(experiment_name, global_config_path)
+    cfg_path = params['cfg_path']
+
+    test_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='test', augment=False)
+    weight = test_dataset.pos_weight()
+    label_names = test_dataset.chosen_labels
+
+    # Changeable network parameters
+    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum)
+    model = ModuleValidator.fix(model)
+
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=params['Network']['physical_batch_size'],
+                                               pin_memory=True, drop_last=False, shuffle=False, num_workers=16)
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=float(params['Network']['lr']),
+                                 weight_decay=float(params['Network']['weight_decay']), amsgrad=params['Network']['amsgrad'])
+
+    errors = ModuleValidator.validate(model, strict=False)
+    assert len(errors) == 0
+    privacy_engine = PrivacyEngine()
+
+    model, _, _ = privacy_engine.make_private_with_epsilon(
+        module=model,
+        optimizer=optimizer, # not important during testing; you should only put a placeholder here
+        data_loader=test_loader, # not important during testing; you should only put a placeholder here
+        epochs=params['num_epochs'], # not important during testing; you should only put a placeholder here
+        target_epsilon=params['DP']['epsilon'], # not important during testing; you should only put a placeholder here
+        target_delta=float(params['DP']['delta']), # not important during testing; you should only put a placeholder here
+        max_grad_norm=params['DP']['max_grad_norm']) # not important during testing; you should only put a placeholder here
+
+    # Initialize prediction
+    predictor = Prediction(cfg_path, label_names)
+    predictor.setup_model_DP(model=model, privacy_engine=privacy_engine)
+    average_f1_score, average_AUROC, average_accuracy, average_specificity, average_sensitivity, average_precision = predictor.evaluate_2D(test_loader)
+
+    print('------------------------------------------------------'
+          '----------------------------------')
+    print(f'\t experiment: {experiment_name}\n')
+
+    print(f'\t avg AUROC: {average_AUROC.mean() * 100:.2f}% | avg accuracy: {average_accuracy.mean() * 100:.2f}%'
+    f' | avg specificity: {average_specificity.mean() * 100:.2f}%'
+    f' | avg recall (sensitivity): {average_sensitivity.mean() * 100:.2f}% | avg precision: {average_precision.mean() * 100:.2f}% | avg F1: {average_f1_score.mean() * 100:.2f}%\n')
+
+    print('Individual AUROC:')
+    for idx, pathology in enumerate(predictor.label_names):
+        print(f'\t{pathology}: {average_AUROC[idx] * 100:.2f}%')
+
+    print('\nIndividual accuracy:')
+    for idx, pathology in enumerate(predictor.label_names):
+        print(f'\t{pathology}: {average_accuracy[idx] * 100:.2f}%')
+
+    print('\nIndividual specificity scores:')
+    for idx, pathology in enumerate(predictor.label_names):
+        print(f'\t{pathology}: {average_specificity[idx] * 100:.2f}%')
+
+    print('\nIndividual sensitivity scores:')
+    for idx, pathology in enumerate(predictor.label_names):
+        print(f'\t{pathology}: {average_sensitivity[idx] * 100:.2f}%')
+
+    print('------------------------------------------------------'
+          '----------------------------------')
+
+    # saving the stats
+    msg = f'----------------------------------------------------------------------------------------\n' \
+          f'\t experiment: {experiment_name}\n\n' \
+          f'avg AUROC: {average_AUROC.mean() * 100:.2f}% | avg accuracy: {average_accuracy.mean() * 100:.2f}% ' \
+          f' | avg specificity: {average_specificity.mean() * 100:.2f}%' \
+          f' | avg recall (sensitivity): {average_sensitivity.mean() * 100:.2f}% | avg precision: {average_precision.mean() * 100:.2f}% | avg F1: {average_f1_score.mean() * 100:.2f}%\n\n'
+
+    with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+        f.write(msg)
+
+    msg = f'Individual AUROC:\n'
+    with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+        f.write(msg)
+    for idx, pathology in enumerate(label_names):
+        msg = f'{pathology}: {average_AUROC[idx] * 100:.2f}% | '
+        with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+            f.write(msg)
+
+    msg = f'\n\nIndividual accuracy:\n'
+    with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+        f.write(msg)
+    for idx, pathology in enumerate(label_names):
+        msg = f'{pathology}: {average_accuracy[idx] * 100:.2f}% | '
+        with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+            f.write(msg)
+
+    msg = f'\n\nIndividual specificity scores:\n'
+    with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+        f.write(msg)
+    for idx, pathology in enumerate(label_names):
+        msg = f'{pathology}: {average_specificity[idx] * 100:.2f}% | '
+        with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+            f.write(msg)
+
+    msg = f'\n\nIndividual sensitivity scores:\n'
+    with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+        f.write(msg)
+    for idx, pathology in enumerate(label_names):
+        msg = f'{pathology}: {average_sensitivity[idx] * 100:.2f}% | '
+        with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
+            f.write(msg)
 
 
 
@@ -315,6 +454,7 @@ if __name__ == '__main__':
     # delete_experiment(experiment_name='temp', global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml")
     # main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
     #               valid=False, resume=False, augment=True, experiment_name='temp', pretrained=False, resnetnum=18)
-    main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-                  valid=True, resume=True, experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64', pretrained=False, resnetnum=50)
-    # main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='temp')
+    # main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+    #               valid=True, resume=True, experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64', pretrained=False, resnetnum=50)
+    # main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64')
+    main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64')

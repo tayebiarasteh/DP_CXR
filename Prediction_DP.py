@@ -55,7 +55,15 @@ class Prediction:
         self.model = model.to(self.device)
 
         # self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path'], model_file_name)))
-        self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path']) + "epoch775_" + model_file_name))
+        self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path']) + "epoch600_" + model_file_name))
+
+
+    def setup_model_DP(self, model, privacy_engine):
+        self.device = None
+        self.setup_cuda()
+        self.model = model.to(self.device)
+        self.privacy_engine = privacy_engine
+        self.privacy_engine.load_checkpoint(module=self.model, path=os.path.join(self.params['target_dir'], self.params['network_output_path'], "epoch630_" + self.params['DP_checkpoint_name']))
 
 
 
@@ -72,13 +80,12 @@ class Prediction:
         total_f1_score = []
         total_AUROC = []
         total_accuracy = []
-        total_specifity_score = []
+        total_specificity_score = []
         total_sensitivity_score = []
         total_precision_score = []
 
         # initializing the caches
-        logits_with_sigmoid_cache = torch.Tensor([]).to(self.device)
-        logits_no_sigmoid_cache = torch.Tensor([]).to(self.device)
+        preds_with_sigmoid_cache = torch.Tensor([]).to(self.device)
         labels_cache = torch.Tensor([]).to(self.device)
 
         for idx, (image, label) in enumerate(tqdm(test_loader)):
@@ -91,36 +98,38 @@ class Prediction:
                 output = self.model(image)
 
                 output_sigmoided = F.sigmoid(output)
-                output_sigmoided = (output_sigmoided > 0.5).float()
 
                 # saving the logits and labels of this batch
-                logits_with_sigmoid_cache = torch.cat((logits_with_sigmoid_cache, output_sigmoided))
-                logits_no_sigmoid_cache = torch.cat((logits_no_sigmoid_cache, output))
+                preds_with_sigmoid_cache = torch.cat((preds_with_sigmoid_cache, output_sigmoided))
                 labels_cache = torch.cat((labels_cache, label))
 
         ############ Evaluation metric calculation ########
 
-        # Metrics calculation (macro) over the whole set
-        logits_with_sigmoid_cache = logits_with_sigmoid_cache.int().cpu().numpy()
-        logits_no_sigmoid_cache = logits_no_sigmoid_cache.int().cpu().numpy()
+        # threshold finding for metrics calculation
+        preds_with_sigmoid_cache = preds_with_sigmoid_cache.cpu().numpy()
         labels_cache = labels_cache.int().cpu().numpy()
+        optimal_threshold = np.zeros(labels_cache.shape[1])
 
-        confusion = metrics.multilabel_confusion_matrix(labels_cache, logits_with_sigmoid_cache)
+        for idx in range(labels_cache.shape[1]):
+            fpr, tpr, thresholds = metrics.roc_curve(labels_cache[:, idx], preds_with_sigmoid_cache[:, idx], pos_label=1)
+            optimal_idx = np.argmax(tpr - fpr)
+            optimal_threshold[idx] = thresholds[optimal_idx]
 
-        try:
-            # plotting the ROC curve
-            for idx in range(len(confusion)):
-                fpr, tpr, _ = metrics.roc_curve(labels_cache[:, idx], logits_no_sigmoid_cache[:, idx], pos_label=1)
-                metrics.RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
-                plt.grid()
-                plt.title('label number: ' + str(idx))
-                plt.show()
-        except:
-            print("hi")
+            metrics.RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+            plt.annotate('working point', xy=(fpr[optimal_idx], tpr[optimal_idx]), xycoords='data',
+                         arrowprops=dict(facecolor='red'))
+            plt.grid()
+            plt.title(self.label_names[idx] + f' | threshold: {optimal_threshold[idx]:.4f}')
+            plt.savefig(os.path.join(self.params['target_dir'], self.params['stat_log_path'], self.label_names[idx] + '.png'))
+
+        predicted_labels = (preds_with_sigmoid_cache > optimal_threshold).astype(np.int32)
+
+        # Metrics calculation (macro) over the whole set
+        confusion = metrics.multilabel_confusion_matrix(labels_cache, predicted_labels)
 
         F1_disease = []
         accuracy_disease = []
-        specifity_disease = []
+        specificity_disease = []
         sensitivity_disease = []
         precision_disease = []
 
@@ -131,33 +140,26 @@ class Prediction:
             TP = disease[1, 1]
             F1_disease.append(2 * TP / (2 * TP + FN + FP + epsilon))
             accuracy_disease.append((TP + TN) / (TP + TN + FP + FN + epsilon))
-            specifity_disease.append(TN / (TN + FP + epsilon))
+            specificity_disease.append(TN / (TN + FP + epsilon))
             sensitivity_disease.append(TP / (TP + FN + epsilon))
             precision_disease.append(TP / (TP + FP + epsilon))
 
         # Macro averaging
         total_f1_score.append(np.stack(F1_disease))
-        try:
-            total_AUROC.append(metrics.roc_auc_score(labels_cache, logits_no_sigmoid_cache, average=None))
-        except:
-            print('hi')
-            pass
+        total_AUROC.append(metrics.roc_auc_score(labels_cache, preds_with_sigmoid_cache, average=None))
         total_accuracy.append(np.stack(accuracy_disease))
-        total_specifity_score.append(np.stack(specifity_disease))
+        total_specificity_score.append(np.stack(specificity_disease))
         total_sensitivity_score.append(np.stack(sensitivity_disease))
         total_precision_score.append(np.stack(precision_disease))
 
         average_f1_score = np.stack(total_f1_score).mean(0)
         average_AUROC = np.stack(total_AUROC).mean(0)
         average_accuracy = np.stack(total_accuracy).mean(0)
-        average_specifity = np.stack(total_specifity_score).mean(0)
+        average_specificity = np.stack(total_specificity_score).mean(0)
         average_sensitivity = np.stack(total_sensitivity_score).mean(0)
         average_precision = np.stack(total_precision_score).mean(0)
 
-        self.plot_confusion_matrix(confusion)
-
-
-        return average_f1_score, average_AUROC, average_accuracy, average_specifity, average_sensitivity, average_precision
+        return average_f1_score, average_AUROC, average_accuracy, average_specificity, average_sensitivity, average_precision
 
 
     def plot_confusion_matrix(self, all_matrices, target_names=None,
