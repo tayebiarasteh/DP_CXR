@@ -55,7 +55,7 @@ class Prediction:
         self.model = model.to(self.device)
 
         # self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path'], model_file_name)))
-        self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path']) + "epoch600_" + model_file_name))
+        self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path']) + "epoch90_" + model_file_name))
 
 
     def setup_model_DP(self, model, privacy_engine):

@@ -456,5 +456,5 @@ if __name__ == '__main__':
     #               valid=False, resume=False, augment=True, experiment_name='temp', pretrained=False, resnetnum=18)
     # main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
     #               valid=True, resume=True, experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64', pretrained=False, resnetnum=50)
-    # main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64')
-    main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64')
+    main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_UKA5k_3labels_imagenetpretrain_resnet50_groupnorm_lr2e5_batch16')
+    # main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64')
