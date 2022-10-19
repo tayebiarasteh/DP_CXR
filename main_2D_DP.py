@@ -28,6 +28,7 @@ warnings.simplefilter("ignore")
 
 
 
+
 def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", valid=False,
                   resume=False, augment=False, experiment_name='name', pretrained=False, resnetnum=50):
     """Main function for training + validation centrally
@@ -52,7 +53,7 @@ def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositori
     cfg_path = params["cfg_path"]
 
     train_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='train', augment=augment)
-    valid_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='valid', augment=False)
+    valid_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='test', augment=False)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['Network']['physical_batch_size'],
                                                pin_memory=True, drop_last=True, shuffle=True, num_workers=10)
@@ -74,7 +75,7 @@ def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositori
     optimizer = torch.optim.Adam(model.parameters(), lr=float(params['Network']['lr']),
                                  weight_decay=float(params['Network']['weight_decay']), amsgrad=params['Network']['amsgrad'])
 
-    trainer = Training(cfg_path, num_epochs=params['num_epochs'], resume=resume, label_names=label_names)
+    trainer = Training(cfg_path, resume=resume, label_names=label_names)
     if resume == True:
         trainer.load_checkpoint(model=model, optimiser=optimizer, loss_function=loss_function, weight=weight, label_names=label_names)
     else:
@@ -138,7 +139,7 @@ def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP
         module=model,
         optimizer=optimizer,
         data_loader=train_loader,
-        epochs=params['num_epochs'],
+        epochs=params['Network']['num_epochs'],
         target_epsilon=params['DP']['epsilon'],
         target_delta=float(params['DP']['delta']),
         max_grad_norm=params['DP']['max_grad_norm'])
@@ -150,13 +151,12 @@ def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP
     #     noise_multiplier=params['DP']['noise_multiplier'],
     #     max_grad_norm=params['DP']['max_grad_norm'])
 
-    trainer = Training(cfg_path, num_epochs=params['num_epochs'], resume=resume, label_names=label_names)
+    trainer = Training(cfg_path, resume=resume, label_names=label_names)
     if resume == True:
         trainer.load_checkpoint_DP(model=model, optimiser=optimizer, loss_function=loss_function, weight=weight, label_names=label_names, privacy_engine=privacy_engine)
     else:
         trainer.setup_model(model=model, optimiser=optimizer, loss_function=loss_function, weight=weight, privacy_engine=privacy_engine)
     trainer.train_epoch_DP(train_loader=train_loader, valid_loader=valid_loader)
-
 
 
 def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_exp_for_test', resnetnum=50):
@@ -291,7 +291,7 @@ def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_
         module=model,
         optimizer=optimizer, # not important during testing; you should only put a placeholder here
         data_loader=test_loader, # not important during testing; you should only put a placeholder here
-        epochs=params['num_epochs'], # not important during testing; you should only put a placeholder here
+        epochs=params['Network']['num_epochs'], # not important during testing; you should only put a placeholder here
         target_epsilon=params['DP']['epsilon'], # not important during testing; you should only put a placeholder here
         target_delta=float(params['DP']['delta']), # not important during testing; you should only put a placeholder here
         max_grad_norm=params['DP']['max_grad_norm']) # not important during testing; you should only put a placeholder here
@@ -369,7 +369,6 @@ def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_
         msg = f'{pathology}: {average_sensitivity[idx] * 100:.2f}% | '
         with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
             f.write(msg)
-
 
 
 

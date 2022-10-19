@@ -4,6 +4,7 @@ Network:
   lr: 5e-5
   weight_decay: 0
   amsgrad: False
+  num_epochs: 1000
 network_output_path: network_data/
 output_data_path: output_data/
 tb_logs_path: tensor_board_logs/
@@ -17,7 +18,6 @@ file_path: /home/soroosh/Documents/datasets/XRay/
 target_dir: /home/soroosh/Documents/Repositories_target_files/DP_CXR/
 display_stats_freq: 1 # valid freq is equal to this
 #display_stats_freq: 15 # valid freq is equal to this
-num_epochs: 1000
 
 DP:
   epsilon: 70
