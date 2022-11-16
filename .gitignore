@@ -2,3 +2,5 @@
 /__pycache__/
 /data/__pycache__/
 /config/__pycache__/
+/pretraining.pth
+/models/__pycache__/

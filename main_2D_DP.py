@@ -18,7 +18,7 @@ from opacus import PrivacyEngine
 from config.serde import open_experiment, create_experiment, delete_experiment, write_config
 from Train_Valid_DP import Training
 from Prediction_DP import Prediction
-from data.data_provider_UKA import UKA_data_loader_2D
+from data.data_provider_UKA import UKA_data_loader_2D, mimic_data_loader_2D
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -52,6 +52,8 @@ def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositori
         params = create_experiment(experiment_name, global_config_path)
     cfg_path = params["cfg_path"]
 
+    # train_dataset = mimic_data_loader_2D(cfg_path=cfg_path, mode='train', augment=augment)
+    # valid_dataset = mimic_data_loader_2D(cfg_path=cfg_path, mode='test', augment=False)
     train_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='train', augment=augment)
     valid_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='test', augment=False)
 
@@ -68,12 +70,11 @@ def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositori
 
     # Changeable network parameters
     model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum, pretrained=pretrained)
-    # model = load_pretrained_swin_transformer(num_classes=len(weight), mode='b', pretrained=pretrained)
-    model = ModuleValidator.fix(model)
+    # model = ModuleValidator.fix(model)
 
     loss_function = BCEWithLogitsLoss
-    optimizer = torch.optim.Adam(model.parameters(), lr=float(params['Network']['lr']),
-                                 weight_decay=float(params['Network']['weight_decay']), amsgrad=params['Network']['amsgrad'])
+    optimizer = torch.optim.NAdam(model.parameters(), lr=float(params['Network']['lr']),
+                                 weight_decay=float(params['Network']['weight_decay']))
 
     trainer = Training(cfg_path, resume=resume, label_names=label_names)
     if resume == True:
@@ -125,11 +126,11 @@ def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP
 
     # Changeable network parameters
     model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum, pretrained=pretrained)
-    model = ModuleValidator.fix(model)
+    # model = ModuleValidator.fix(model)
 
     loss_function = BCEWithLogitsLoss
-    optimizer = torch.optim.Adam(model.parameters(), lr=float(params['Network']['lr']),
-                                 weight_decay=float(params['Network']['weight_decay']), amsgrad=params['Network']['amsgrad'])
+    optimizer = torch.optim.NAdam(model.parameters(), lr=float(params['Network']['lr']),
+                                 weight_decay=float(params['Network']['weight_decay']))
 
     errors = ModuleValidator.validate(model, strict=False)
     assert len(errors) == 0
@@ -139,7 +140,7 @@ def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP
         module=model,
         optimizer=optimizer,
         data_loader=train_loader,
-        epochs=params['Network']['num_epochs'],
+        epochs=2,
         target_epsilon=params['DP']['epsilon'],
         target_delta=float(params['DP']['delta']),
         max_grad_norm=params['DP']['max_grad_norm'])
@@ -176,7 +177,7 @@ def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositorie
 
     # Changeable network parameters
     model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum)
-    model = ModuleValidator.fix(model)
+    # model = ModuleValidator.fix(model)
 
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=params['Network']['physical_batch_size'],
                                                pin_memory=True, drop_last=False, shuffle=False, num_workers=16)
@@ -275,7 +276,7 @@ def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_
 
     # Changeable network parameters
     model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum)
-    model = ModuleValidator.fix(model)
+    # model = ModuleValidator.fix(model)
 
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=params['Network']['physical_batch_size'],
                                                pin_memory=True, drop_last=False, shuffle=False, num_workers=16)
@@ -374,10 +375,33 @@ def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_
 
 def load_pretrained_resnet(num_classes=2, resnet_num=34, pretrained=False):
     # Load a pre-trained model from config file
-    # self.model.load_state_dict(torch.load(self.model_info['pretrain_model_path']))
 
     # Load a pre-trained model from Torchvision
-    if resnet_num == 18:
+    if resnet_num == 9:
+        model = models.resnet.ResNet(models.resnet.BasicBlock, [1, 1, 1, 1])
+        in_features = model.fc.in_features
+        model.avgpool = torch.nn.AdaptiveAvgPool2d(1)
+        model.fc = torch.nn.Linear(in_features, num_classes)
+        model.bn1 = torch.nn.GroupNorm(32, 64)
+        model.layer1[0].bn1 = torch.nn.GroupNorm(32, 64)
+        model.layer1[0].bn2 = torch.nn.GroupNorm(32, 64)
+        model.layer2[0].bn1 = torch.nn.GroupNorm(32, 128)
+        model.layer2[0].bn2 = torch.nn.GroupNorm(32, 128)
+        model.layer2[0].downsample[1] = torch.nn.GroupNorm(32, 128)
+        model.layer3[0].bn1 = torch.nn.GroupNorm(32, 256)
+        model.layer3[0].bn2 = torch.nn.GroupNorm(32, 256)
+        model.layer3[0].downsample[1] = torch.nn.GroupNorm(32, 256)
+        model.layer4[0].bn1 = torch.nn.GroupNorm(32, 512)
+        model.layer4[0].bn2 = torch.nn.GroupNorm(32, 512)
+        model.layer4[0].downsample[1] = torch.nn.GroupNorm(32, 512)
+
+        if pretrained:
+            model.load_state_dict(torch.load('./pretraining.pth'))
+
+        for param in model.parameters():
+            param.requires_grad = True
+
+    elif resnet_num == 18:
         if pretrained:
             model = models.resnet18(weights='DEFAULT')
         else:
@@ -411,49 +435,13 @@ def load_pretrained_resnet(num_classes=2, resnet_num=34, pretrained=False):
 
 
 
-def load_pretrained_swin_transformer(num_classes=2, mode='b', pretrained=False):
-    # Load a pre-trained model from config file
-
-    # Load a pre-trained model from Torchvision
-    if mode == 't':
-        if pretrained:
-            model = models.swin_t(weights='DEFAULT')
-        else:
-            model = models.swin_t()
-        for param in model.parameters():
-            param.requires_grad = True
-        model.head = torch.nn.Linear(768, num_classes)  # for Swin Transformer tiny
-
-    elif mode == 's':
-        if pretrained:
-            model = models.swin_s(weights='DEFAULT')
-        else:
-            model = models.swin_s()
-        for param in model.parameters():
-            param.requires_grad = True
-        model.head = torch.nn.Linear(768, num_classes)  # for Swin Transformer small
-
-    elif mode == 'b':
-        if pretrained:
-            model = models.swin_b(weights='DEFAULT')
-        else:
-            model = models.swin_b()
-        for param in model.parameters():
-            param.requires_grad = True
-        model.head = torch.nn.Linear(1024, num_classes)  # for Swin Transformer base
-
-    return model
-
-
-
-
 
 
 if __name__ == '__main__':
-    # delete_experiment(experiment_name='temp', global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml")
-    # main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-    #               valid=False, resume=False, augment=True, experiment_name='temp', pretrained=False, resnetnum=18)
+    delete_experiment(experiment_name='tempp', global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml")
+    main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+                  valid=False, resume=False, augment=True, experiment_name='tempp', pretrained=True, resnetnum=9)
     # main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-    #               valid=True, resume=True, experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64', pretrained=False, resnetnum=50)
-    main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_UKA5k_3labels_imagenetpretrain_resnet50_groupnorm_lr2e5_batch16')
+    #               valid=False, resume=False, experiment_name='tempp', pretrained=True, resnetnum=9)
+    # main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_UKA5k_3labels_imagenetpretrain_resnet50_groupnorm_lr2e5_batch16')
     # main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64')
