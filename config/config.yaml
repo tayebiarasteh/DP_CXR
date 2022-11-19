@@ -1,9 +1,11 @@
 Network:
-  physical_batch_size: 12
-#  physical_batch_size: 24
-  lr: 2e-3
+#  physical_batch_size: 5
+#  physical_batch_size: 32
+  physical_batch_size: 64
+#  lr: 2
+  lr: 2e-4
   weight_decay: 0
-  num_epochs: 100
+  num_epochs: 500
 network_output_path: network_data/
 output_data_path: output_data/
 tb_logs_path: tensor_board_logs/
@@ -27,5 +29,7 @@ DP:
 #  delta: 1e-4  # [for 5K UKA] at least inverse of the training dataset length, or lower
   max_grad_norm: 1.5 # this has a direct relationship with controling the sensitivity
 #  noise_multiplier: 0.5 # usually between [0.1 , 2]
-  logical_batch_size: 15 # for physical of 5
+#  logical_batch_size: 15 # for physical of 5
 #  logical_batch_size: 64 # for physical of 16
+#  logical_batch_size: 128 # for physical of 32
+  logical_batch_size: 128 # for physical of 64
