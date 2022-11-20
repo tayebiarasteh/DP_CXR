@@ -434,14 +434,16 @@ def load_pretrained_resnet(num_classes=2, resnet_num=34, pretrained=False, mish=
             torch.nn.Linear(512, num_classes))  # for resnet 34
 
     elif resnet_num == 50:
-        if pretrained:
-            model = models.resnet50(weights='DEFAULT')
-        else:
-            model = models.resnet50()
-        for param in model.parameters():
-            param.requires_grad = True
+        model = models.resnet50()
+
         model.fc = torch.nn.Sequential(
         torch.nn.Linear(2048, num_classes)) # for resnet 50
+
+        if pretrained:
+            model.load_state_dict(torch.load('/home/soroosh/Documents/Repositories/DP_CXR/pretraining_resnet50_512.pth'))
+
+        for param in model.parameters():
+            param.requires_grad = True
 
     return model
 
@@ -450,10 +452,10 @@ def load_pretrained_resnet(num_classes=2, resnet_num=34, pretrained=False, mish=
 
 
 if __name__ == '__main__':
-    delete_experiment(experiment_name='tempp', global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml")
+    delete_experiment(experiment_name='central_UKA154K_mimicpretrain_resnet50_lr5e4', global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml")
     # main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
     #               valid=False, resume=False, augment=True, experiment_name='tempp', pretrained=True, resnetnum=9)
     main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-                  valid=False, augment=False, resume=False, experiment_name='tempp', pretrained=True, resnetnum=9, mish=False)
+                  valid=True, resume=False, augment=True, experiment_name='central_UKA154K_mimicpretrain_resnet50_lr5e4', pretrained=True, resnetnum=50)
     # main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_UKA5k_3labels_imagenetpretrain_resnet50_groupnorm_lr2e5_batch16')
     # main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64')

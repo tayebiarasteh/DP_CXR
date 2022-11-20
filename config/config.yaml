@@ -1,7 +1,7 @@
 Network:
-#  physical_batch_size: 5
+  physical_batch_size: 5
 #  physical_batch_size: 32
-  physical_batch_size: 64
+#  physical_batch_size: 64
 #  lr: 2
   lr: 2e-4
   weight_decay: 0
