@@ -19,7 +19,6 @@ from config.serde import open_experiment, create_experiment, delete_experiment, 
 from Train_Valid_DP import Training
 from Prediction_DP import Prediction
 from data.data_provider_UKA import UKA_data_loader_2D, mimic_data_loader_2D
-from models.resnet_13 import ResNet13KN
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -29,9 +28,8 @@ warnings.simplefilter("ignore")
 
 
 
-
 def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", valid=False,
-                  resume=False, augment=False, experiment_name='name', pretrained=False, resnetnum=50):
+                  resume=False, augment=False, experiment_name='name', pretrained=False, resnetnum=50, mish=False, size256=False):
     """Main function for training + validation centrally
         Parameters
         ----------
@@ -53,8 +51,10 @@ def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositori
         params = create_experiment(experiment_name, global_config_path)
     cfg_path = params["cfg_path"]
 
-    train_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='train', augment=augment)
-    valid_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='test', augment=False)
+    # train_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='train', augment=augment, size256=size256)
+    # valid_dataset = UKA_data_loader_2D(cfg_path=cfg_path, mode='test', augment=False, size256=size256)
+    train_dataset = mimic_data_loader_2D(cfg_path=cfg_path, mode='train', augment=augment, size256=size256)
+    valid_dataset = mimic_data_loader_2D(cfg_path=cfg_path, mode='test', augment=False, size256=size256)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['Network']['physical_batch_size'],
                                                pin_memory=True, drop_last=True, shuffle=True, num_workers=10)
@@ -69,7 +69,7 @@ def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositori
 
     # Changeable network parameters
     # model = ResNet13KN(num_classes=8, activation=torch.nn.Mish)
-    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum, pretrained=pretrained)
+    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum, pretrained=pretrained, mish=mish, size256=size256)
     # model = ModuleValidator.fix(model)
 
     loss_function = BCEWithLogitsLoss
@@ -86,7 +86,7 @@ def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositori
 
 
 def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", valid=False,
-                  resume=False, augment=False, experiment_name='name', pretrained=False, resnetnum=34, mish=False, epsilonepochs=2):
+                  resume=False, augment=False, experiment_name='name', pretrained=False, resnetnum=34, mish=False, size256=False, epsilonepochs=2):
     """Main function for training + validation using DPSGD
 
         Parameters
@@ -126,7 +126,7 @@ def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP
 
     # Changeable network parameters
     # model = ResNet13KN(num_classes=8, activation=torch.nn.Mish)
-    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum, pretrained=pretrained, mish=mish)
+    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum, pretrained=pretrained, mish=mish, size256=size256)
     # model = ModuleValidator.fix(model)
     loss_function = BCEWithLogitsLoss
     optimizer = torch.optim.NAdam(model.parameters(), lr=float(params['Network']['lr']),
@@ -258,7 +258,6 @@ def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositorie
 
 
 
-
 def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_exp_for_test', resnetnum=50):
     """Main function for multi label prediction with differential privacy
 
@@ -373,7 +372,7 @@ def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_
 
 
 
-def load_pretrained_resnet(num_classes=2, resnet_num=34, pretrained=False, mish=False):
+def load_pretrained_resnet(num_classes=2, resnet_num=34, pretrained=False, mish=False, size256=False):
     # Load a pre-trained model from config file
 
     # Load a pre-trained model from Torchvision
@@ -408,7 +407,10 @@ def load_pretrained_resnet(num_classes=2, resnet_num=34, pretrained=False, mish=
             model.layer4[0].relu = activation
 
         if pretrained:
-            model.load_state_dict(torch.load('./pretraining_resnet9_512.pth'))
+            if size256:
+                model.load_state_dict(torch.load('/home/soroosh/Documents/Repositories/DP_CXR/pretraining_resnet9_256.pth'))
+            else:
+                model.load_state_dict(torch.load('/home/soroosh/Documents/Repositories/DP_CXR/pretraining_resnet9_512.pth'))
 
         for param in model.parameters():
             param.requires_grad = True
@@ -434,16 +436,14 @@ def load_pretrained_resnet(num_classes=2, resnet_num=34, pretrained=False, mish=
             torch.nn.Linear(512, num_classes))  # for resnet 34
 
     elif resnet_num == 50:
-        model = models.resnet50()
-
-        model.fc = torch.nn.Sequential(
-        torch.nn.Linear(2048, num_classes)) # for resnet 50
-
         if pretrained:
-            model.load_state_dict(torch.load('/home/soroosh/Documents/Repositories/DP_CXR/pretraining_resnet50_512.pth'))
-
+            model = models.resnet50(weights='DEFAULT')
+        else:
+            model = models.resnet50()
         for param in model.parameters():
             param.requires_grad = True
+        model.fc = torch.nn.Sequential(
+        torch.nn.Linear(2048, num_classes)) # for resnet 50
 
     return model
 
@@ -452,10 +452,8 @@ def load_pretrained_resnet(num_classes=2, resnet_num=34, pretrained=False, mish=
 
 
 if __name__ == '__main__':
-    delete_experiment(experiment_name='central_UKA154K_mimicpretrain_resnet50_lr5e4', global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml")
-    # main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-    #               valid=False, resume=False, augment=True, experiment_name='tempp', pretrained=True, resnetnum=9)
-    main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-                  valid=True, resume=False, augment=True, experiment_name='central_UKA154K_mimicpretrain_resnet50_lr5e4', pretrained=True, resnetnum=50)
-    # main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_UKA5k_3labels_imagenetpretrain_resnet50_groupnorm_lr2e5_batch16')
-    # main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='DP_UKA5k_8labels_imagenetpretrain_resnet50_lr5e5_decay1e5_epsilon500_maxnorm1.9_batch16_logibatch64')
+    # delete_experiment(experiment_name='central_UKA5k_3labels_imagenetpretrain_resnet50_batchnorm_lr2e5_batch16', global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml")
+    main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+                  valid=True, resume=False, augment=True, experiment_name='pretrainingmimic_forUKADP_resnet9_lr2e4_relu_256_8labels', pretrained=False, resnetnum=9, size256=True)
+    # main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+    #               valid=True, augment=False, resume=False, experiment_name='mimicpret_resnet9_gnorm_mish_lr1e3_decay5e4_eps5_lin100', pretrained=True, resnetnum=9, mish=True, size256=True)

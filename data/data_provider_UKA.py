@@ -30,7 +30,7 @@ class UKA_data_loader_2D(Dataset):
     """
     This is the pipeline based on Pytorch's Dataset and Dataloader
     """
-    def __init__(self, cfg_path, mode='train', augment=False):
+    def __init__(self, cfg_path, mode='train', augment=False, size256=False):
         """
         Parameters
         ----------
@@ -57,7 +57,11 @@ class UKA_data_loader_2D(Dataset):
         elif mode == 'test':
             self.subset_df = self.org_df[self.org_df['split'] == 'test']
 
-        self.file_base_dir = os.path.join(self.file_base_dir, 'UKA_preprocessed')
+        if size256:
+            self.file_base_dir = os.path.join(self.file_base_dir, 'UKA_preprocessed256')
+        else:
+            self.file_base_dir = os.path.join(self.file_base_dir, 'UKA_preprocessed')
+
         self.file_path_list = list(self.subset_df['image_id'])
         self.chosen_labels = ['cardiomegaly', 'congestion', 'pleural_effusion_right', 'pleural_effusion_left', 'pneumonic_infiltrates_right',
                               'pneumonic_infiltrates_left', 'atelectasis_right', 'atelectasis_left'] # 8 labels
@@ -140,7 +144,7 @@ class mimic_data_loader_2D(Dataset):
     """
     This is the pipeline based on Pytorch's Dataset and Dataloader
     """
-    def __init__(self, cfg_path, mode='train', augment=False):
+    def __init__(self, cfg_path, mode='train', augment=False, size256=False):
         """
         Parameters
         ----------
@@ -156,6 +160,7 @@ class mimic_data_loader_2D(Dataset):
         self.cfg_path = cfg_path
         self.params = read_config(cfg_path)
         self.augment = augment
+        self.size256 = size256
         self.file_base_dir = self.params['file_path']
         self.file_base_dir = os.path.join(self.file_base_dir, "MIMIC")
         # self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "master_list.csv"), sep=',')
@@ -194,7 +199,11 @@ class mimic_data_loader_2D(Dataset):
         label: torch tensor
         """
         img_path = os.path.join(self.file_base_dir, self.file_path_list[idx])
-        img_path = img_path.replace("/files/", "/preprocessed/")
+        if self.size256:
+            img_path = img_path.replace("/files/", "/preprocessed256/")
+        else:
+            img_path = img_path.replace("/files/", "/preprocessed/")
+
         img = cv2.imread(img_path) # (h, w, d)
 
         if self.augment:
