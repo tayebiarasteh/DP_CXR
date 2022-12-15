@@ -14,6 +14,7 @@ from torch.nn import BCEWithLogitsLoss
 from torchvision import transforms, models
 from opacus.validators import ModuleValidator
 from opacus import PrivacyEngine
+import numpy as np
 
 from config.serde import open_experiment, create_experiment, delete_experiment, write_config
 from Train_Valid_DP import Training
@@ -29,7 +30,7 @@ warnings.simplefilter("ignore")
 
 
 def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", valid=False,
-                  resume=False, augment=False, experiment_name='name', pretrained=False, resnetnum=50, mish=False, size256=False):
+                  resume=False, augment=False, experiment_name='name', pretrained=False, resnet_num=50, mish=False, size256=False):
     """Main function for training + validation centrally
         Parameters
         ----------
@@ -69,7 +70,7 @@ def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositori
 
     # Changeable network parameters
     # model = ResNet13KN(num_classes=8, activation=torch.nn.Mish)
-    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum, pretrained=pretrained, mish=mish, size256=size256)
+    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnet_num, pretrained=pretrained, mish=mish, size256=size256)
     # model = ModuleValidator.fix(model)
 
     loss_function = BCEWithLogitsLoss
@@ -86,7 +87,7 @@ def main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositori
 
 
 def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", valid=False,
-                  resume=False, augment=False, experiment_name='name', pretrained=False, resnetnum=34, mish=False, size256=False, epsilonepochs=2):
+                  resume=False, augment=False, experiment_name='name', pretrained=False, resnet_num=34, mish=False, size256=False, epsilonepochs=2):
     """Main function for training + validation using DPSGD
 
         Parameters
@@ -126,7 +127,7 @@ def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP
 
     # Changeable network parameters
     # model = ResNet13KN(num_classes=8, activation=torch.nn.Mish)
-    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum, pretrained=pretrained, mish=mish, size256=size256)
+    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnet_num, pretrained=pretrained, mish=mish, size256=size256)
     # model = ModuleValidator.fix(model)
     loss_function = BCEWithLogitsLoss
     optimizer = torch.optim.NAdam(model.parameters(), lr=float(params['Network']['lr']),
@@ -160,7 +161,7 @@ def main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP
     trainer.train_epoch_DP(train_loader=train_loader, valid_loader=valid_loader)
 
 
-def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_exp_for_test', resnetnum=50):
+def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_exp_for_test', resnet_num=50):
     """Main function for multi label prediction without DP
 
     Parameters
@@ -176,7 +177,7 @@ def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositorie
     label_names = test_dataset.chosen_labels
 
     # Changeable network parameters
-    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum)
+    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnet_num)
     # model = ModuleValidator.fix(model)
 
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=params['Network']['physical_batch_size'],
@@ -258,7 +259,7 @@ def main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositorie
 
 
 
-def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_exp_for_test', resnetnum=50):
+def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml", experiment_name='central_exp_for_test', resnet_num=50, mish=False, experiment_epoch_num=10):
     """Main function for multi label prediction with differential privacy
 
     Parameters
@@ -274,14 +275,14 @@ def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_
     label_names = test_dataset.chosen_labels
 
     # Changeable network parameters
-    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnetnum)
+    model = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnet_num, mish=mish)
     # model = ModuleValidator.fix(model)
 
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=params['Network']['physical_batch_size'],
                                                pin_memory=True, drop_last=False, shuffle=False, num_workers=16)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=float(params['Network']['lr']),
-                                 weight_decay=float(params['Network']['weight_decay']), amsgrad=params['Network']['amsgrad'])
+    optimizer = torch.optim.NAdam(model.parameters(), lr=float(params['Network']['lr']),
+                                 weight_decay=float(params['Network']['weight_decay']))
 
     errors = ModuleValidator.validate(model, strict=False)
     assert len(errors) == 0
@@ -298,7 +299,7 @@ def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_
 
     # Initialize prediction
     predictor = Prediction(cfg_path, label_names)
-    predictor.setup_model_DP(model=model, privacy_engine=privacy_engine)
+    predictor.setup_model_DP(model=model, privacy_engine=privacy_engine, epoch_num=experiment_epoch_num)
     average_f1_score, average_AUROC, average_accuracy, average_specificity, average_sensitivity, average_precision = predictor.evaluate_2D(test_loader)
 
     print('------------------------------------------------------'
@@ -369,6 +370,209 @@ def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_
         msg = f'{pathology}: {average_sensitivity[idx] * 100:.2f}% | '
         with open(os.path.join(params['target_dir'], params['stat_log_path']) + '/test_Stats', 'a') as f:
             f.write(msg)
+
+
+
+def main_test_2D_bootstrap(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+                                                 experiment_name1='central_exp_for_test',
+                                                 experiment1_epoch_num=100, resnet_num=9, mish=True):
+    """Main function for multi label prediction
+    model1 must be DP model
+
+    Parameters
+    ----------
+    experiment_name: str
+        name of the experiment to be loaded.
+    """
+    dataset_name = 'UKA-CXR'
+    params1 = open_experiment(experiment_name1, global_config_path)
+    cfg_path1 = params1['cfg_path']
+
+    test_dataset = UKA_data_loader_2D(cfg_path=cfg_path1, mode='test', augment=False)
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=params1['Network']['physical_batch_size'],
+                                               pin_memory=True, drop_last=False, shuffle=False, num_workers=16)
+    weight = test_dataset.pos_weight()
+    label_names = test_dataset.chosen_labels
+
+    model1 = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnet_num, mish=mish)
+    # model1 = ModuleValidator.fix(model1)
+    optimizer = torch.optim.NAdam(model1.parameters(), lr=float(params1['Network']['lr']),
+                                 weight_decay=float(params1['Network']['weight_decay']))
+    errors = ModuleValidator.validate(model1, strict=False)
+    assert len(errors) == 0
+    privacy_engine = PrivacyEngine()
+    model1, _, _ = privacy_engine.make_private_with_epsilon(
+        module=model1,
+        optimizer=optimizer, # not important during testing; you should only put a placeholder here
+        data_loader=test_loader, # not important during testing; you should only put a placeholder here
+        epochs=params1['Network']['num_epochs'], # not important during testing; you should only put a placeholder here
+        target_epsilon=params1['DP']['epsilon'], # not important during testing; you should only put a placeholder here
+        target_delta=float(params1['DP']['delta']), # not important during testing; you should only put a placeholder here
+        max_grad_norm=params1['DP']['max_grad_norm']) # not important during testing; you should only put a placeholder here
+
+    index_list = []
+    for counter in range(1000):
+        index_list.append(np.random.choice(len(test_dataset), len(test_dataset)))
+
+    # Initialize prediction 1
+    predictor1 = Prediction(cfg_path1, label_names)
+    predictor1.setup_model_DP(model=model1, privacy_engine=privacy_engine, epoch_num=experiment1_epoch_num)
+
+    delta = float(6e-6)
+    epsilon = predictor1.privacy_engine.get_epsilon(delta)
+    print(f"\n(ε = {epsilon:.2f}, δ = {delta})\n")
+    msg = f"\n(ε = {epsilon:.2f}, δ = {delta})\n"
+    with open(os.path.join(params1['target_dir'], params1['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
+        f.write(msg)
+
+    pred_array1, target_array1 = predictor1.predict_only(test_loader)
+    AUC_list1 = predictor1.bootstrapper(pred_array1.cpu().numpy(), target_array1.int().cpu().numpy(), index_list, dataset_name)
+
+
+def main_test_2D_pvalue_out_of_bootstrap(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+                                                 experiment_name1='central_exp_for_test', experiment_name2='central_exp_for_test',
+                                                 experiment1_epoch_num=100, experiment2_epoch_num=100, resnet_num=9, mish=True):
+    """Main function for multi label prediction
+    model1 must be DP model
+    model2 must be non DP model
+
+    Parameters
+    ----------
+    experiment_name: str
+        name of the experiment to be loaded.
+    """
+    dataset_name = 'UKA-CXR'
+    params1 = open_experiment(experiment_name1, global_config_path)
+    cfg_path1 = params1['cfg_path']
+
+    test_dataset = UKA_data_loader_2D(cfg_path=cfg_path1, mode='test', augment=False)
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=params1['Network']['physical_batch_size'],
+                                               pin_memory=True, drop_last=False, shuffle=False, num_workers=16)
+    weight = test_dataset.pos_weight()
+    label_names = test_dataset.chosen_labels
+
+    index_list = []
+    for counter in range(1000):
+        index_list.append(np.random.choice(len(test_dataset), len(test_dataset)))
+
+    model1 = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnet_num, mish=mish)
+    # model1 = ModuleValidator.fix(model1)
+    optimizer = torch.optim.NAdam(model1.parameters(), lr=float(params1['Network']['lr']),
+                                 weight_decay=float(params1['Network']['weight_decay']))
+    errors = ModuleValidator.validate(model1, strict=False)
+    assert len(errors) == 0
+    privacy_engine = PrivacyEngine()
+    model1, _, _ = privacy_engine.make_private_with_epsilon(
+        module=model1,
+        optimizer=optimizer, # not important during testing; you should only put a placeholder here
+        data_loader=test_loader, # not important during testing; you should only put a placeholder here
+        epochs=params1['Network']['num_epochs'], # not important during testing; you should only put a placeholder here
+        target_epsilon=params1['DP']['epsilon'], # not important during testing; you should only put a placeholder here
+        target_delta=float(params1['DP']['delta']), # not important during testing; you should only put a placeholder here
+        max_grad_norm=params1['DP']['max_grad_norm']) # not important during testing; you should only put a placeholder here
+
+    # Initialize prediction 1
+    predictor1 = Prediction(cfg_path1, label_names)
+    predictor1.setup_model_DP(model=model1, privacy_engine=privacy_engine, epoch_num=experiment1_epoch_num)
+
+    delta = float(6e-6)
+    epsilon = predictor1.privacy_engine.get_epsilon(delta)
+    print(f"\n(ε = {epsilon:.2f}, δ = {delta})\n")
+    msg = f"\n(ε = {epsilon:.2f}, δ = {delta})\n"
+    with open(os.path.join(params1['target_dir'], params1['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
+        f.write(msg)
+
+    pred_array1, target_array1 = predictor1.predict_only(test_loader)
+    AUC_list1 = predictor1.bootstrapper(pred_array1.cpu().numpy(), target_array1.int().cpu().numpy(), index_list, dataset_name)
+
+    model2 = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnet_num, mish=False)
+    # model2 = ModuleValidator.fix(model2)
+
+    # Initialize prediction 2
+    params2 = open_experiment(experiment_name2, global_config_path)
+    cfg_path2 = params2['cfg_path']
+    predictor2 = Prediction(cfg_path2, label_names)
+    predictor2.setup_model(model=model2, epoch_num=experiment2_epoch_num)
+    pred_array2, target_array2 = predictor2.predict_only(test_loader)
+    AUC_list2 = predictor2.bootstrapper(pred_array2.cpu().numpy(), target_array2.int().cpu().numpy(), index_list, dataset_name)
+
+    print('individual labels p-values:\n')
+    for idx, pathology in enumerate(label_names):
+        counter = AUC_list1[:, idx] > AUC_list2[:, idx]
+        ratio1 = (len(counter) - counter.sum()) / len(counter)
+        if ratio1 <= 0.05:
+            print(f'\t{pathology} p-value: {ratio1}; model 1 significantly higher AUC than model 2')
+        else:
+            counter = AUC_list2[:, idx] > AUC_list1[:, idx]
+            ratio2 = (len(counter) - counter.sum()) / len(counter)
+            if ratio2 <= 0.05:
+                print(f'\t{pathology} p-value: {ratio2}; model 2 significantly higher AUC than model 1')
+            else:
+                print(f'\t{pathology} p-value: {ratio1}; models NOT significantly different for this label')
+
+    print('\nAvg AUC of labels p-values:\n')
+    avgAUC_list1 = AUC_list1.mean(1)
+    avgAUC_list2 = AUC_list2.mean(1)
+    counter = avgAUC_list1 > avgAUC_list2
+    ratio1 = (len(counter) - counter.sum()) / len(counter)
+    if ratio1 <= 0.05:
+        print(f'\tp-value: {ratio1}; model 1 significantly higher AUC than model 2 on average')
+    else:
+        counter = avgAUC_list2 > avgAUC_list1
+        ratio2 = (len(counter) - counter.sum()) / len(counter)
+        if ratio2 <= 0.05:
+            print(f'\tp-value: {ratio2}; model 2 significantly higher AUC than model 1 on average')
+        else:
+            print(f'\tp-value: {ratio1}; models NOT significantly different on average for all labels')
+
+
+    msg = f'\n\nindividual labels p-values:\n'
+    with open(os.path.join(params1['target_dir'], params1['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
+        f.write(msg)
+    with open(os.path.join(params2['target_dir'], params2['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
+        f.write(msg)
+    for idx, pathology in enumerate(label_names):
+        counter = AUC_list1[:, idx] > AUC_list2[:, idx]
+        ratio1 = (len(counter) - counter.sum()) / len(counter)
+        if ratio1 <= 0.05:
+            msg = f'\t{pathology} p-value: {ratio1}; model 1 significantly higher AUC than model 2'
+        else:
+            counter = AUC_list2[:, idx] > AUC_list1[:, idx]
+            ratio2 = (len(counter) - counter.sum()) / len(counter)
+            if ratio2 <= 0.05:
+                msg = f'\t{pathology} p-value: {ratio2}; model 2 significantly higher AUC than model 1'
+            else:
+                msg = f'\t{pathology} p-value: {ratio1}; models NOT significantly different for this label'
+
+        with open(os.path.join(params1['target_dir'], params1['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
+            f.write(msg)
+        with open(os.path.join(params2['target_dir'], params2['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
+            f.write(msg)
+
+
+    msg = f'\n\nAvg AUC of labels p-values:\n'
+    with open(os.path.join(params1['target_dir'], params1['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
+        f.write(msg)
+    with open(os.path.join(params2['target_dir'], params2['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
+        f.write(msg)
+    avgAUC_list1 = AUC_list1.mean(1)
+    avgAUC_list2 = AUC_list2.mean(1)
+    counter = avgAUC_list1 > avgAUC_list2
+    ratio1 = (len(counter) - counter.sum()) / len(counter)
+    if ratio1 <= 0.05:
+        msg = f'\tp-value: {ratio1}; model 1 significantly higher AUC than model 2 on average'
+    else:
+        counter = avgAUC_list2 > avgAUC_list1
+        ratio2 = (len(counter) - counter.sum()) / len(counter)
+        if ratio2 <= 0.05:
+            msg = f'\tp-value: {ratio2}; model 2 significantly higher AUC than model 1 on average'
+        else:
+            msg = f'\tp-value: {ratio1}; models NOT significantly different on average for all labels'
+
+    with open(os.path.join(params1['target_dir'], params1['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
+        f.write(msg)
+    with open(os.path.join(params2['target_dir'], params2['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
+        f.write(msg)
 
 
 
@@ -453,7 +657,18 @@ def load_pretrained_resnet(num_classes=2, resnet_num=34, pretrained=False, mish=
 
 if __name__ == '__main__':
     # delete_experiment(experiment_name='central_UKA5k_3labels_imagenetpretrain_resnet50_batchnorm_lr2e5_batch16', global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml")
-    main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-                  valid=True, resume=False, augment=True, experiment_name='pretrainingmimic_forUKADP_resnet9_lr2e4_relu_256_8labels', pretrained=False, resnetnum=9, size256=True)
+    # main_train_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+    #               valid=True, resume=False, augment=True, experiment_name='pretrainingmimic_forUKADP_resnet9_lr2e4_relu_256_8labels', pretrained=False, resnet_num=9, size256=True)
     # main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-    #               valid=True, augment=False, resume=False, experiment_name='mimicpret_resnet9_gnorm_mish_lr1e3_decay5e4_eps5_lin100', pretrained=True, resnetnum=9, mish=True, size256=True)
+    #               valid=True, augment=False, resume=False, experiment_name='mimicpret_resnet9_gnorm_mish_lr1e3_decay5e4_eps5_lin100', pretrained=True, resnet_num=9, mish=True, size256=True)
+    # main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+    #             experiment_name='mimicpret_resnet9_gnorm_mish_lr5e4_eps11_lin150', resnet_num=9, mish=True, experiment_epoch_num=93)
+
+    main_test_2D_bootstrap(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+                           experiment_name1='mimicpret_resnet9_gnorm_mish_lr5e4_eps11_lin150',
+                           experiment1_epoch_num=93, resnet_num=9, mish=True)
+
+    main_test_2D_pvalue_out_of_bootstrap(
+        global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+        experiment_name1='mimicpret_resnet9_gnorm_mish_lr5e4_eps11_lin150', experiment_name2='central_UKA150K_mimicpretrain_resnet9_groupnorm_relu_512_lr5e5',
+        experiment1_epoch_num=93, experiment2_epoch_num=91, resnet_num=9, mish=True)
