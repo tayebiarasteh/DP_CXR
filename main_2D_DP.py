@@ -373,6 +373,7 @@ def main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_
 
 
 
+
 def main_test_2D_bootstrap(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
                                                  experiment_name1='central_exp_for_test',
                                                  experiment1_epoch_num=100, resnet_num=9, mish=True):
@@ -400,6 +401,7 @@ def main_test_2D_bootstrap(global_config_path="/home/soroosh/Documents/Repositor
                                  weight_decay=float(params1['Network']['weight_decay']))
     errors = ModuleValidator.validate(model1, strict=False)
     assert len(errors) == 0
+
     privacy_engine = PrivacyEngine()
     model1, _, _ = privacy_engine.make_private_with_epsilon(
         module=model1,
@@ -425,8 +427,9 @@ def main_test_2D_bootstrap(global_config_path="/home/soroosh/Documents/Repositor
     with open(os.path.join(params1['target_dir'], params1['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
         f.write(msg)
 
-    pred_array1, target_array1 = predictor1.predict_only(test_loader)
+    pred_array1, target_array1, gender_array1, age_array1 = predictor1.predict_only(test_loader)
     AUC_list1 = predictor1.bootstrapper(pred_array1.cpu().numpy(), target_array1.int().cpu().numpy(), index_list, dataset_name)
+
 
 
 def main_test_2D_pvalue_out_of_bootstrap(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
@@ -482,7 +485,7 @@ def main_test_2D_pvalue_out_of_bootstrap(global_config_path="/home/soroosh/Docum
     with open(os.path.join(params1['target_dir'], params1['stat_log_path']) + '/Test_on_' + str(dataset_name), 'a') as f:
         f.write(msg)
 
-    pred_array1, target_array1 = predictor1.predict_only(test_loader)
+    pred_array1, target_array1, gender_array1, age_array1 = predictor1.predict_only(test_loader)
     AUC_list1 = predictor1.bootstrapper(pred_array1.cpu().numpy(), target_array1.int().cpu().numpy(), index_list, dataset_name)
 
     model2 = load_pretrained_resnet(num_classes=len(weight), resnet_num=resnet_num, mish=False)
@@ -493,7 +496,7 @@ def main_test_2D_pvalue_out_of_bootstrap(global_config_path="/home/soroosh/Docum
     cfg_path2 = params2['cfg_path']
     predictor2 = Prediction(cfg_path2, label_names)
     predictor2.setup_model(model=model2, epoch_num=experiment2_epoch_num)
-    pred_array2, target_array2 = predictor2.predict_only(test_loader)
+    pred_array2, target_array2, gender_array2, age_array2 = predictor2.predict_only(test_loader)
     AUC_list2 = predictor2.bootstrapper(pred_array2.cpu().numpy(), target_array2.int().cpu().numpy(), index_list, dataset_name)
 
     print('individual labels p-values:\n')
@@ -661,13 +664,17 @@ if __name__ == '__main__':
     #               valid=True, resume=False, augment=True, experiment_name='pretrainingmimic_forUKADP_resnet9_lr2e4_relu_256_8labels', pretrained=False, resnet_num=9, size256=True)
     # main_train_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
     #               valid=True, augment=False, resume=False, experiment_name='mimicpret_resnet9_gnorm_mish_lr1e3_decay5e4_eps5_lin100', pretrained=True, resnet_num=9, mish=True, size256=True)
-    # main_test_DP_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-    #             experiment_name='mimicpret_resnet9_gnorm_mish_lr5e4_eps11_lin150', resnet_num=9, mish=True, experiment_epoch_num=93)
+    # main_test_central_2D(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+    #             experiment_name='central_UKA150K_mimicpretrain_resnet9_groupnorm_relu_512_lr5e5', resnet_num=9, mish=True, experiment_epoch_num=91)
 
-    main_test_2D_bootstrap(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
-                           experiment_name1='mimicpret_resnet9_gnorm_mish_lr5e4_eps11_lin150',
-                           experiment1_epoch_num=93, resnet_num=9, mish=True)
+    # main_test_2D_age_gender(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+    #                        experiment_name='mimicpret_resnet9_gnorm_mish_lr5e4_eps11_lin150',
+    #                        experiment_epoch_num=93, resnet_num=9, mish=True)
 
+    # main_test_2D_bootstrap(global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
+    #                        experiment_name1='mimicpret_resnet9_gnorm_mish_lr5e4_eps11_lin150',
+    #                        experiment1_epoch_num=93, resnet_num=9, mish=True)
+    #
     main_test_2D_pvalue_out_of_bootstrap(
         global_config_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml",
         experiment_name1='mimicpret_resnet9_gnorm_mish_lr5e4_eps11_lin150', experiment_name2='central_UKA150K_mimicpretrain_resnet9_groupnorm_relu_512_lr5e5',

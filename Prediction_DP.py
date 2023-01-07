@@ -171,9 +171,13 @@ class Prediction:
         # initializing the caches
         preds_with_sigmoid_cache = torch.Tensor([]).to(self.device)
         labels_cache = torch.Tensor([]).to(self.device)
+        gender_cache = torch.Tensor([]).to(self.device)
+        age_cache = torch.Tensor([]).to(self.device)
 
-        for idx, (image, label) in enumerate(tqdm(test_loader)):
+        for idx, (image, label, gender, age) in enumerate(tqdm(test_loader)):
 
+            gender = gender.to(self.device)
+            age = age.to(self.device)
             image = image.to(self.device)
             label = label.to(self.device)
             label = label.float()
@@ -186,8 +190,10 @@ class Prediction:
                 # saving the logits and labels of this batch
                 preds_with_sigmoid_cache = torch.cat((preds_with_sigmoid_cache, output_sigmoided))
                 labels_cache = torch.cat((labels_cache, label))
+                gender_cache = torch.cat((gender_cache, gender))
+                age_cache = torch.cat((age_cache, age))
 
-        return preds_with_sigmoid_cache, labels_cache
+        return preds_with_sigmoid_cache, labels_cache, gender_cache, age_cache
 
 
     def bootstrapper(self, preds_with_sigmoid, targets, index_list, testsetname):
@@ -340,6 +346,8 @@ class Prediction:
         df.to_csv(os.path.join(self.params['target_dir'], self.params['stat_log_path']) + '/bootstrapped_AUC_Test_on' + str(testsetname) + '.csv', sep=',', index=False)
 
         return AUC_list
+
+
 
     def plot_confusion_matrix(self, all_matrices, target_names=None,
                               title='Confusion matrix', cmap=None, normalize=False):

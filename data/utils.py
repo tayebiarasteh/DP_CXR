@@ -1,7 +1,6 @@
 """
 Created on Jan 3, 2023.
 utils.py
-heatmap figures generator
 
 @author: Soroosh Tayebi Arasteh <soroosh.arasteh@rwth-aachen.de>
 https://github.com/tayebiarasteh/
@@ -12,11 +11,55 @@ import pdb
 import pandas as pd
 from tqdm import tqdm
 import os
+import matplotlib.pyplot as plt
 
 import warnings
 warnings.filterwarnings('ignore')
 warnings.simplefilter("ignore")
 
+
+
+
+def statistics_creator():
+    path = "/home/soroosh/Documents/datasets/XRay/UKA/chest_radiograph/DP_project_also_original/neworiginal_novalid_UKA_master_list.csv"
+
+    df = pd.read_csv(path, sep=',', low_memory=False)
+    df = df[df['age'] > 0]
+    df = df[df['age'] < 120]
+
+    df = df[df['split'] == 'test']
+
+    agethresh = 50
+    ratiobelow = 100 * len(df[df['age'] < agethresh]) / len(df)
+    ratioabove = 100 * len(df[df['age'] > agethresh]) / len(df)
+
+    print('test')
+
+    totalfemale = len(df[df['gender'] == 1])
+    totalmale = len(df) - len(df[df['gender'] == 1])
+
+    print(f'Total # females: {totalfemale} ({100 * totalfemale / (totalfemale + totalmale):.0f}%)')
+    print(f'Total # males: {totalmale} ({100 * totalmale / (totalfemale + totalmale):.0f}%)')
+    print(f'Ratio age < {agethresh}: {ratiobelow:.2f}% | Ratio age > {agethresh}: {ratioabove:.2f}%')
+
+    meanage = df['age'].mean()
+    stdage = df['age'].std()
+    print(f'mean age: {meanage:.0f} ± {stdage:.0f}')
+
+    plt.rcParams.update({'font.size': 22})
+
+    # plt.subplot(221)
+    # plt.hist(df['age'])
+    # plt.title('(A) Training set')
+
+    plt.subplot(222)
+    plt.hist(df['age'])
+    plt.title('(B) Test set')
+
+    # plt.subplot(212)
+    # plt.hist(df['age'])
+    # plt.title('(C) Overall')
+    plt.show()
 
 
 def sample_size():
@@ -43,21 +86,20 @@ def sample_size():
 
 
 
-
-
 class csv_summarizer():
     def __init__(self, cfg_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml"):
         pass
 
 
     def UKA(self):
-        final_df = pd.DataFrame(columns=['image_id', 'split', 'age', 'birth_date', 'examination_date', 'study_time',
+        final_df = pd.DataFrame(columns=['image_id', 'split', 'subset' 'age', 'birth_date', 'examination_date', 'study_time',
                                             'patient_sex', 'gender', 'ExposureinuAs', 'cardiomegaly', 'congestion', 'pleural_effusion_right', 'pleural_effusion_left',
                      'pneumonic_infiltrates_right', 'pneumonic_infiltrates_left', 'atelectasis_right',	'atelectasis_left', 'pneumothorax_right', 'pneumothorax_left', 'subject_id'])
 
         label_path = '/home/soroosh/Documents/datasets/XRay/UKA/chest_radiograph/DP_project_also_original/original_novalid_UKA_master_list.csv'
         output_path = '/home/soroosh/Documents/datasets/XRay/UKA/chest_radiograph/DP_project_also_original/neworiginal_novalid_UKA_master_list.csv'
         df = pd.read_csv(label_path, sep=',')
+        df = df[df['split'] == 'test']
 
         for index, row in tqdm(df.iterrows()):
             age = self.date_to_age(row['birth_date'], row['examination_date'])
@@ -66,10 +108,10 @@ class csv_summarizer():
             else:
                 gender = 1
 
-            tempp = pd.DataFrame([[row['image_id'], row['split'], age, row['birth_date'], row['examination_date'], row['study_time'],
+            tempp = pd.DataFrame([[row['image_id'], row['split'], row['subset'], age, row['birth_date'], row['examination_date'], row['study_time'],
                                             row['patient_sex'], gender, row['ExposureinuAs'], row['cardiomegaly'], row['congestion'], row['pleural_effusion_right'], row['pleural_effusion_left'],
                                    row['pneumonic_infiltrates_right'], row['pneumonic_infiltrates_left'], row['atelectasis_right'], row['atelectasis_left'], row['pneumothorax_right'], row['pneumothorax_left'], row['subject_id']]],
-                                 columns=['image_id', 'split', 'age', 'birth_date', 'examination_date', 'study_time',
+                                 columns=['image_id', 'split', 'subset', 'age', 'birth_date', 'examination_date', 'study_time',
                                             'patient_sex', 'gender', 'ExposureinuAs', 'cardiomegaly', 'congestion', 'pleural_effusion_right', 'pleural_effusion_left',
                      'pneumonic_infiltrates_right', 'pneumonic_infiltrates_left',	'atelectasis_right',	'atelectasis_left', 'pneumothorax_right', 'pneumothorax_left', 'subject_id'])
             final_df = final_df.append(tempp)
@@ -107,6 +149,5 @@ class csv_summarizer():
 
 if __name__ == '__main__':
     # sample_size()
-    handle = csv_summarizer()
-    handle.UKA()
+    statistics_creator()
 
