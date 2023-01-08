@@ -6,16 +6,13 @@ Prediction_DP.py
 https://github.com/tayebiarasteh/
 """
 
-import pdb
 import torch
 import os.path
 import torch.nn.functional as F
 import numpy as np
-import torchmetrics
 from sklearn import metrics
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import itertools
 import pandas as pd
 
 from config.serde import read_config
@@ -55,8 +52,6 @@ class Prediction:
             model_file_name = self.params['trained_model_name']
         self.model = model.to(self.device)
 
-        # self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path'], model_file_name)))
-        # self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path']) + "epoch90_" + model_file_name))
         self.model.load_state_dict(torch.load(os.path.join(self.params['target_dir'], self.params['network_output_path']) + "epoch" + str(epoch_num) + "_" + model_file_name))
 
 
@@ -346,55 +341,3 @@ class Prediction:
         df.to_csv(os.path.join(self.params['target_dir'], self.params['stat_log_path']) + '/bootstrapped_AUC_Test_on' + str(testsetname) + '.csv', sep=',', index=False)
 
         return AUC_list
-
-
-
-    def plot_confusion_matrix(self, all_matrices, target_names=None,
-                              title='Confusion matrix', cmap=None, normalize=False):
-        """
-        given a sklearn confusion matrix (cm), make a nice plot
-        ---------
-        cm:           confusion matrix from sklearn.metrics.confusion_matrix
-        target_names: given classification classes such as [0, 1, 2]
-                      the class names, for example: ['high', 'medium', 'low']
-        cmap:         the gradient of the values displayed from matplotlib.pyplot.cm
-                      plt.get_cmap('jet') or plt.cm.Blues
-        normalize:    If False, plot the raw numbers
-                      If True, plot the proportions
-        """
-
-        for cm in all_matrices:
-            accuracy = np.trace(cm) / np.sum(cm).astype('float')
-            misclass = 1 - accuracy
-
-            if cmap is None:
-                cmap = plt.get_cmap('Blues')
-
-            plt.figure(figsize=(8, 6))
-            plt.imshow(cm, interpolation='nearest', cmap=cmap)
-            # plt.imshow(cm)
-            plt.title(title)
-            plt.colorbar()
-
-            if target_names is not None:
-                tick_marks = np.arange(len(target_names))
-                plt.xticks(tick_marks, target_names, rotation=45)
-                plt.yticks(tick_marks, target_names)
-
-            if normalize:
-                cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-
-            thresh = cm.max() / 1.5 if normalize else cm.max() / 2
-            for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-                if normalize:
-                    plt.text(j, i, "{:0.4f}".format(cm[i, j]),
-                             horizontalalignment="center",
-                             color="white" if cm[i, j] > thresh else "black")
-                else:
-                    plt.text(j, i, "{:,}".format(cm[i, j]),
-                             horizontalalignment="center",
-                             color="white" if cm[i, j] > thresh else "black")
-            plt.tight_layout()
-            plt.ylabel('True label')
-            plt.xlabel('Predicted label\naccuracy={:0.2f}%; misclass={:0.2f}%'.format(accuracy*100, misclass*100))
-            plt.show()
