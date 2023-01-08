@@ -8,16 +8,13 @@ https://github.com/tayebiarasteh/
 
 import os.path
 import time
-import pdb
 import numpy as np
 from tensorboardX import SummaryWriter
 import torch
 import torch.nn.functional as F
-# import torchmetrics
 from sklearn import metrics
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 from config.serde import read_config, write_config
 
@@ -97,7 +94,6 @@ class Training:
         else:
             elapsed_mins = int(elapsed_time / 60)
             elapsed_secs = elapsed_time - (elapsed_mins * 60)
-            # elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
         return elapsed_hours, elapsed_mins, elapsed_secs
 
 
@@ -422,13 +418,6 @@ class Training:
             fpr, tpr, thresholds = metrics.roc_curve(labels_cache[:, idx], preds_with_sigmoid_cache[:, idx], pos_label=1)
             optimal_idx = np.argmax(tpr - fpr)
             optimal_threshold[idx] = thresholds[optimal_idx]
-
-            # metrics.RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
-            # plt.annotate('working point', xy=(fpr[optimal_idx], tpr[optimal_idx]), xycoords='data',
-            #              arrowprops=dict(facecolor='red'))
-            # plt.grid()
-            # plt.title(self.label_names[idx] + f' | threshold: {optimal_threshold[idx]:.4f} | epoch: {self.epoch}')
-            # plt.savefig(self.label_names[idx] + '.png')
 
         predicted_labels = (preds_with_sigmoid_cache > optimal_threshold).astype(np.int32)
 
