@@ -4,3 +4,4 @@
 /config/__pycache__/
 /pretraining.pth
 /models/__pycache__/
+*.pth

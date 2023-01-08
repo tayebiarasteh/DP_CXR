@@ -1,0 +1,10 @@
+name: DP_CXR
+
+channels:
+  - pytorch
+
+dependencies:
+  - python==3.10
+  - pytorch==1.13
+  - torchvision 
+  - cudatoolkit
