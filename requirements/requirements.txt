@@ -13,4 +13,5 @@ pandas
 jupyter
 opencv-python
 pylibjpeg[libjpeg,openjpeg,rle]
+seaborn
 
