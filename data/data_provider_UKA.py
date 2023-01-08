@@ -8,9 +8,7 @@ https://github.com/tayebiarasteh/
 
 import os
 
-import matplotlib.pyplot as plt
 import torch
-import pdb
 import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
@@ -48,7 +46,7 @@ class UKA_data_loader_2D(Dataset):
         self.augment = augment
         self.file_base_dir = self.params['file_path']
         self.file_base_dir = os.path.join(self.file_base_dir, 'UKA/chest_radiograph')
-        self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "DP_project_also_original/original_novalid_UKA_master_list.csv"), sep=',') # 150,188 train / 39,021 test images
+        self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "master_list.csv"), sep=',')
 
         if mode == 'train':
             self.subset_df = self.org_df[self.org_df['split'] == 'train']
@@ -58,20 +56,6 @@ class UKA_data_loader_2D(Dataset):
             self.subset_df = self.org_df[self.org_df['split'] == 'test']
 
         self.mode = mode
-
-        # ageinterval = [0, 30]
-        # ageinterval = [30, 60]
-        # ageinterval = [60, 70]
-        # ageinterval = [70, 80]
-        # ageinterval = [80, 100]
-        # self.subset_df = self.subset_df[self.subset_df['age'] > ageinterval[0]]
-        # self.subset_df = self.subset_df[self.subset_df['age'] < ageinterval[1]]
-
-        # self.subset_df = self.subset_df[self.subset_df['gender'] > 0] # female
-        # self.subset_df = self.subset_df[self.subset_df['gender'] < 1] # male
-
-        print(len(self.subset_df))
-
 
         if size256:
             self.file_base_dir = os.path.join(self.file_base_dir, 'UKA_preprocessed256')
@@ -186,8 +170,7 @@ class mimic_data_loader_2D(Dataset):
         self.size256 = size256
         self.file_base_dir = self.params['file_path']
         self.file_base_dir = os.path.join(self.file_base_dir, "MIMIC")
-        # self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "master_list.csv"), sep=',')
-        self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "nothree_master_list_20percenttest.csv"), sep=',')
+        self.org_df = pd.read_csv(os.path.join(self.file_base_dir, "master_list.csv"), sep=',')
 
         if mode == 'train':
             self.subset_df = self.org_df[self.org_df['split'] == 'train']

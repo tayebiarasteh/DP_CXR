@@ -21,49 +21,33 @@ warnings.simplefilter("ignore")
 
 
 def statistics_creator():
-    path = "/home/soroosh/Documents/datasets/XRay/UKA/chest_radiograph/DP_project_also_original/neworiginal_novalid_UKA_master_list.csv"
+    path = "master_list.csv"
 
     df = pd.read_csv(path, sep=',', low_memory=False)
     df = df[df['age'] > 0]
     df = df[df['age'] < 120]
 
-    df = df[df['split'] == 'test']
-
-    agethresh = 50
-    ratiobelow = 100 * len(df[df['age'] < agethresh]) / len(df)
-    ratioabove = 100 * len(df[df['age'] > agethresh]) / len(df)
-
-    print('test')
-
-    totalfemale = len(df[df['gender'] == 1])
-    totalmale = len(df) - len(df[df['gender'] == 1])
-
-    print(f'Total # females: {totalfemale} ({100 * totalfemale / (totalfemale + totalmale):.0f}%)')
-    print(f'Total # males: {totalmale} ({100 * totalmale / (totalfemale + totalmale):.0f}%)')
-    print(f'Ratio age < {agethresh}: {ratiobelow:.2f}% | Ratio age > {agethresh}: {ratioabove:.2f}%')
-
-    meanage = df['age'].mean()
-    stdage = df['age'].std()
-    print(f'mean age: {meanage:.0f} ± {stdage:.0f}')
+    df_train = df[df['split'] == 'train']
+    df_test = df[df['split'] == 'test']
 
     plt.rcParams.update({'font.size': 22})
 
-    # plt.subplot(221)
-    # plt.hist(df['age'])
-    # plt.title('(A) Training set')
+    plt.subplot(221)
+    plt.hist(df_train['age'])
+    plt.title('(A) Training set')
 
     plt.subplot(222)
-    plt.hist(df['age'])
+    plt.hist(df_test['age'])
     plt.title('(B) Test set')
 
-    # plt.subplot(212)
-    # plt.hist(df['age'])
-    # plt.title('(C) Overall')
+    plt.subplot(212)
+    plt.hist(df['age'])
+    plt.title('(C) Overall')
     plt.show()
 
 
 def sample_size():
-    path = "/home/soroosh/Documents/datasets/XRay/UKA/chest_radiograph/DP_project_also_original/original_novalid_UKA_master_list.csv"
+    path = "UKA_master_list.csv"
 
     df = pd.read_csv(path, sep=',', low_memory=False)
 
@@ -87,7 +71,7 @@ def sample_size():
 
 
 class csv_summarizer():
-    def __init__(self, cfg_path="/home/soroosh/Documents/Repositories/DP_CXR/config/config.yaml"):
+    def __init__(self, cfg_path="DP_CXR/config/config.yaml"):
         pass
 
 
@@ -96,8 +80,8 @@ class csv_summarizer():
                                             'patient_sex', 'gender', 'ExposureinuAs', 'cardiomegaly', 'congestion', 'pleural_effusion_right', 'pleural_effusion_left',
                      'pneumonic_infiltrates_right', 'pneumonic_infiltrates_left', 'atelectasis_right',	'atelectasis_left', 'pneumothorax_right', 'pneumothorax_left', 'subject_id'])
 
-        label_path = '/home/soroosh/Documents/datasets/XRay/UKA/chest_radiograph/DP_project_also_original/original_novalid_UKA_master_list.csv'
-        output_path = '/home/soroosh/Documents/datasets/XRay/UKA/chest_radiograph/DP_project_also_original/neworiginal_novalid_UKA_master_list.csv'
+        label_path = 'master_list.csv'
+        output_path = 'master_list.csv'
         df = pd.read_csv(label_path, sep=',')
         df = df[df['split'] == 'test']
 
