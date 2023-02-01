@@ -46,6 +46,107 @@ def statistics_creator():
     plt.show()
 
 
+def comorbidites_histogram():
+    path = "UKA_master_list.csv"
+
+    df = pd.read_csv(path, sep=',', low_memory=False)
+    df = df[df['age'] >= 0]
+    df = df[df['age'] < 120]
+    # df = df[df['split'] == 'train']
+    df = df[df['split'] == 'test']
+
+
+    df_first = df[df['age'] >= 0]
+    df_first = df_first[df_first['age'] < 30]
+    mean = df_first['comorbidities'].mean()
+    std = df_first['comorbidities'].std()
+    print(f'[0 30]: {mean:.1f} ± {std:.1f}')
+
+    df_sec = df[df['age'] >= 30]
+    df_sec = df_sec[df_sec['age'] < 60]
+    mean = df_sec['comorbidities'].mean()
+    std = df_sec['comorbidities'].std()
+    print(f'[30 60]: {mean:.1f} ± {std:.1f}')
+
+    df_third = df[df['age'] >= 60]
+    df_third = df_third[df_third['age'] < 70]
+    mean = df_third['comorbidities'].mean()
+    std = df_third['comorbidities'].std()
+    print(f'[60 70]: {mean:.1f} ± {std:.1f}')
+
+    df_fourth = df[df['age'] >= 70]
+    df_fourth = df_fourth[df_fourth['age'] < 80]
+    mean = df_fourth['comorbidities'].mean()
+    std = df_fourth['comorbidities'].std()
+    print(f'[70 80]: {mean:.1f} ± {std:.1f}')
+
+    df_fifth = df[df['age'] >= 80]
+    df_fifth = df_fifth[df_fifth['age'] < 100]
+    mean = df_fifth['comorbidities'].mean()
+    std = df_fifth['comorbidities'].std()
+    print(f'[80 100]: {mean:.1f} ± {std:.1f}')
+
+    df_female = df[df['gender'] > 0] # female
+    mean = df_female['comorbidities'].mean()
+    std = df_female['comorbidities'].std()
+    print(f'female: {mean:.1f} ± {std:.1f}')
+
+    df_male = df[df['gender'] < 1] # male
+    mean = df_male['comorbidities'].mean()
+    std = df_male['comorbidities'].std()
+    print(f'male: {mean:.1f} ± {std:.1f}')
+
+    mean = df['comorbidities'].mean()
+    std = df['comorbidities'].std()
+    print(f'overall: {mean:.1f} ± {std:.1f}')
+
+    plt.rcParams.update({'font.size': 16})
+
+    plt.suptitle('Distribution of comorbidities over the test set')
+
+    plt.subplot(241)
+    plt.hist(df_first['comorbidities'], bins=8)
+    plt.title('(A) [0, 30) Years')
+    plt.ylim([0, 6000])
+
+    plt.subplot(242)
+    plt.hist(df_sec['comorbidities'], bins=8)
+    plt.title('(B) [30, 60) Years')
+    plt.ylim([0, 6000])
+
+    plt.subplot(243)
+    plt.hist(df_third['comorbidities'], bins=8)
+    plt.title('(C) [60, 70) Years')
+    plt.ylim([0, 6000])
+
+    plt.subplot(244)
+    plt.hist(df_fourth['comorbidities'], bins=8)
+    plt.title('(D) [70, 80) Years')
+    plt.ylim([0, 6000])
+
+    plt.subplot(245)
+    plt.hist(df_fifth['comorbidities'], bins=8)
+    plt.title('(E) [80, 100) Years')
+    plt.ylim([0, 6000])
+
+    plt.subplot(246)
+    plt.hist(df_female['comorbidities'], bins=8, color='red')
+    plt.title('(F) Female')
+    plt.ylim([0, 10000])
+
+    plt.subplot(247)
+    plt.hist(df_male['comorbidities'], bins=8, color='red')
+    plt.title('(G) Male')
+    plt.ylim([0, 10000])
+
+    plt.subplot(248)
+    plt.hist(df['comorbidities'], bins=8,  color='green')
+    plt.title('(H) Overall')
+    plt.ylim([0, 16000])
+    plt.show()
+
+
+
 def sample_size():
     path = "UKA_master_list.csv"
 

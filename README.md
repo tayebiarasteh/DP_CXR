@@ -1,12 +1,10 @@
-# Private, fair and still accurate: Building an AI model for chest X-ray under patient privacy guarantees
+# Private, fair and accurate: Training large-scale, privacy-preserving AI models in radiology
 
-
-[![Open Source Love](https://badges.frapsoft.com/os/v2/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/)
 
 Overview
 ------
 
-* This is the official repository of the paper [**Private, fair and still accurate: Building an artificial intelligence model for chest radiographs under patient privacy guarantees**]().
+* This is the official repository of the paper [**Private, fair and accurate: Training large-scale, privacy-preserving AI models in radiology**]().
 * Pre-print version: []()
 
 ------
