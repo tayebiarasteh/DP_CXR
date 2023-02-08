@@ -4,10 +4,10 @@
 Overview
 ------
 
-* This is the official repository of the paper [**Private, fair and accurate: Training large-scale, privacy-preserving AI models in radiology**]().
-* Pre-print version: []()
+* This is the official repository of the paper [**Private, fair and accurate: Training large-scale, privacy-preserving AI models in radiology**](https://arxiv.org/abs/2302.01622).
+* Pre-print version: [https://arxiv.org/abs/2302.01622](https://arxiv.org/abs/2302.01622)
 
-------
+
 
 Introduction
 ------
@@ -16,7 +16,7 @@ Differentially-private training of advanced artificial intelligence models for d
 
 ![](./intro.png)
 
-------
+
 ### Prerequisites
 
 The software is developed in **Python 3.10**. For the deep learning, the **PyTorch 1.13** framework is used. The DP code was developed using **Opacus 1.3.0**.
@@ -38,7 +38,7 @@ $ source activate DP_CXR
 
 **Note:** These might take a few minutes.
 
-------
+
 Code structure
 ---
 
@@ -54,6 +54,24 @@ Our source code for differential privacy as well as training and evaluation of t
 * *./Train_Valid_DP.py* contains the training and validation processes.
 * *./Prediction_DP.py* all the prediction and testing processes.
 
-------
+
+Citation
+---
+
 ### In case you use this repository, please cite the original paper:
+
+S. Tayebi Arasteh, A. Ziller, C. Kuhl, M. Makowski, S. Nebelung, R. Braren, D. Rueckert, D. Truhn, G. Kaissis. "*Private, fair and accurate: Training large-scale, privacy-preserving AI models in radiology*". ArXiv, arxiv.2302.01622, https://doi.org/10.48550/arxiv.2302.01622, 2023.
+
+
+### BibTex
+
+    @article {DPCXR2023,
+      author = {Tayebi Arasteh, Soroosh and Ziller, Alexander and Kuhl, Christiane and Makowski, Marcus and Nebelung, Sven and Braren, Rickmer and Rueckert, Daniel and Truhn, Daniel and Kaissis, Georgios},
+      title = {Private, fair and accurate: Training large-scale, privacy-preserving AI models in radiology},
+      year = {2023},
+      doi = {10.48550/ARXIV.2302.01622},
+      publisher = {arXiv},
+      URL = {https://arxiv.org/abs/2302.01622},
+      journal = {arXiv}
+    }
 
