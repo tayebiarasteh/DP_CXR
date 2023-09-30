@@ -19,7 +19,7 @@ Differentially-private training of advanced artificial intelligence models for d
 
 ### Prerequisites
 
-The software is developed in **Python 3.10**. For the deep learning, the **PyTorch 1.13** framework is used. The DP code was developed using **Opacus 1.3.0**.
+The software is developed in **Python 3.10**. For deep learning, the **PyTorch 1.13** framework is used. The DP code was developed using **Opacus 1.3.0**.
 
 
 
@@ -28,7 +28,7 @@ Main Python modules required for the software can be installed from ./requiremen
 1. Create a Python3 environment by installing the conda `environment.yml` file:
 
 ```
-$ conda env create -f environment.yml
+$ conda env create -f environment.yaml
 $ source activate DP_CXR
 ```
 
