@@ -1,10 +1,10 @@
-# Private, fair and accurate: Training large-scale, privacy-preserving AI models in medical imaging
+# Preserving fairness and diagnostic accuracy in private large-scale AI models for medical imaging
 
 
 Overview
 ------
 
-* This is the official repository of the paper [**Private, fair and accurate: Training large-scale, privacy-preserving AI models in medical imaging**](https://arxiv.org/abs/2302.01622).
+* This is the official repository of the paper [**Preserving fairness and diagnostic accuracy in private large-scale AI models for medical imaging**](https://doi.org/10.1038/s43856-024-00462-6).
 * Pre-print version: [https://arxiv.org/abs/2302.01622](https://arxiv.org/abs/2302.01622)
 
 
@@ -60,18 +60,19 @@ Citation
 
 ### In case you use this repository, please cite the original paper:
 
-S. Tayebi Arasteh, A. Ziller, C. Kuhl, M. Makowski, S. Nebelung, R. Braren, D. Rueckert, D. Truhn, G. Kaissis. "*Private, fair and accurate: Training large-scale, privacy-preserving AI models in medical imaging*". ArXiv, arxiv.2302.01622, https://doi.org/10.48550/arxiv.2302.01622, 2023.
+S. Tayebi Arasteh, A. Ziller, C. Kuhl, M. Makowski, S. Nebelung, R. Braren, D. Rueckert, D. Truhn, G. Kaissis. "*Preserving fairness and diagnostic accuracy in private large-scale AI models for medical imaging*". Commun Med 4 (2024), https://doi.org/10.1038/s43856-024-00462-6.
 
 
 ### BibTex
 
-    @article {DPCXR2023,
+    @article {DPCXR2024,
       author = {Tayebi Arasteh, Soroosh and Ziller, Alexander and Kuhl, Christiane and Makowski, Marcus and Nebelung, Sven and Braren, Rickmer and Rueckert, Daniel and Truhn, Daniel and Kaissis, Georgios},
-      title = {Private, fair and accurate: Training large-scale, privacy-preserving AI models in medical imaging},
-      year = {2023},
-      doi = {10.48550/ARXIV.2302.01622},
-      publisher = {arXiv},
-      URL = {https://arxiv.org/abs/2302.01622},
-      journal = {arXiv}
+      title = {Preserving fairness and diagnostic accuracy in private large-scale AI models for medical imaging},
+      year = {2024},
+      volume = {4},
+      doi = {10.1038/s43856-024-00462-6},
+      publisher = {Nature Portfolio},
+      URL = {https://doi.org/10.1038/s43856-024-00462-6},
+      journal = {Communications Medicine}
     }
 
